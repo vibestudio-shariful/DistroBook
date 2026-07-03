@@ -7,48 +7,52 @@
 
     <!-- Stylized Book Cover Shadow / Glow -->
     <path
-        android:pathData="M38,32h28c4.4,0 8,3.6 8,8v28c0,4.4 -3.6,8 -8,8h-28c-2.2,0 -4,-1.8 -4,-4v-36c0,-2.2 1.8,-4 4,-4z"
-        android:fillColor="#1A000000" />
+        android:fillColor="#1A000000"
+        android:pathData="M38,32h28c4.4,0,8,3.6,8,8v28c0,4.4,-3.6,8,-8,8h-28c-2.2,0,-4,-1.8,-4,-4v-36c0,-2.2,1.8,-4,4,-4z" />
 
     <!-- Main Book Body / Cover -->
     <path
-        android:pathData="M40,30h26c4.4,0 8,3.6 8,8v28c0,4.4 -3.6,8 -8,8h-26c-2.2,0 -4,-1.8 -4,-4v-36c0,-2.2 1.8,-4 4,-4z"
-        android:fillColor="#FFFFFF" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,30h26c4.4,0,8,3.6,8,8v28c0,4.4,-3.6,8,-8,8h-26c-2.2,0,-4,-1.8,-4,-4v-36c0,-2.2,1.8,-4,4,-4z" />
 
     <!-- Book Spine (contrasting Accent) -->
     <path
-        android:pathData="M36,30h5v44h-5c-2.2,0 -4,-1.8 -4,-4v-36c0,-2.2 1.8,-4 4,-4z"
-        android:fillColor="#00E5FF" />
+        android:fillColor="#00E5FF"
+        android:pathData="M36,30h5v44h-5c-2.2,0,-4,-1.8,-4,-4v-36c0,-2.2,1.8,-4,4,-4z" />
 
     <!-- Page lines inside the ledger -->
     <path
-        android:pathData="M47,40h16"
-        android:strokeWidth="2"
+        android:fillColor="#00000000"
         android:strokeColor="#CFD8DC"
-        android:strokeLineCap="round" />
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M47,40h16" />
     <path
-        android:pathData="M47,47h16"
-        android:strokeWidth="2"
+        android:fillColor="#00000000"
         android:strokeColor="#CFD8DC"
-        android:strokeLineCap="round" />
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M47,47h16" />
     <path
-        android:pathData="M47,54h10"
-        android:strokeWidth="2"
+        android:fillColor="#00000000"
         android:strokeColor="#CFD8DC"
-        android:strokeLineCap="round" />
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M47,54h10" />
 
     <!-- Dynamic Distribution & Growth Arrow wrapping up and out -->
     <path
-        android:pathData="M43,63l20,-20h-5v-6h15v15h-6v-5l-20,20z"
-        android:fillColor="#FF9100" />
+        android:fillColor="#FF9100"
+        android:pathData="M43,63l20,-20h-5v-6h15v15h-6v-5l-20,20z" />
 
     <!-- A small elegant box/cargo icon overlay at the bottom right of the book to represent supply/distribution -->
     <path
-        android:pathData="M65,58l5,-3l5,3v6l-5,3l-5,-3z"
-        android:fillColor="#00B0FF" />
+        android:fillColor="#00B0FF"
+        android:pathData="M65,58l5,-3l5,3v6l-5,3l-5,-3z" />
     <path
-        android:pathData="M70,55v9M65,58l5,3l5,-3"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
         android:strokeWidth="1"
-        android:strokeColor="#FFFFFF" />
+        android:pathData="M70,55v9M65,58l5,3l5,-3" />
 
 </vector>

@@ -38,7 +38,8 @@ jobs:
           base64 -d debug.keystore.base64 > debug.keystore
           echo "Debug Keystore restored from Base64"
         else
-          echo "No debug.keystore.base64 found, Gradle will generate a default one"
+          echo "No debug.keystore.base64 found, generating a default one..."
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -storetype PKCS12
         fi
 
     - name: Regenerate Gradle Wrapper

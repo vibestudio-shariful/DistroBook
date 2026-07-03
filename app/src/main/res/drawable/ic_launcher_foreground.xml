@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
@@ -17,25 +16,9 @@
         android:fillColor="#FFFFFF" />
 
     <!-- Book Spine (contrasting Accent) -->
-    <!-- Gradient for premium glossy feel -->
     <path
-        android:pathData="M36,30h5v44h-5c-2.2,0 -4,-1.8 -4,-4v-36c0,-2.2 1.8,-4 4,-4z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="41"
-                android:endY="74"
-                android:startX="32"
-                android:startY="30"
-                android:type="linear">
-                <item
-                    android:color="#00E5FF"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00838F"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
+        android:pathData="M36,30h5v44h-5c-2.2,0 -4,-1.8 -4,-4v-36c0,-2.2 1.8,-4 4,-4z"
+        android:fillColor="#00E5FF" />
 
     <!-- Page lines inside the ledger -->
     <path
@@ -56,23 +39,8 @@
 
     <!-- Dynamic Distribution & Growth Arrow wrapping up and out -->
     <path
-        android:pathData="M43,63l20,-20h-5v-6h15v15h-6v-5l-20,20z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="73"
-                android:endY="55"
-                android:startX="43"
-                android:startY="63"
-                android:type="linear">
-                <item
-                    android:color="#FFD600"
-                    android:offset="0.0" />
-                <item
-                    android:color="#FF6D00"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
+        android:pathData="M43,63l20,-20h-5v-6h15v15h-6v-5l-20,20z"
+        android:fillColor="#FF9100" />
 
     <!-- A small elegant box/cargo icon overlay at the bottom right of the book to represent supply/distribution -->
     <path

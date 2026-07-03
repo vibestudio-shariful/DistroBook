@@ -31,7 +31,10 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      MyApplicationTheme(darkTheme = false) {
+      val viewModel: AppViewModel = viewModel()
+      val isDarkMode by viewModel.isDarkMode.collectAsState()
+
+      MyApplicationTheme(darkTheme = isDarkMode) {
         Surface(
           modifier = Modifier.fillMaxSize(),
           color = MaterialTheme.colorScheme.background
@@ -79,14 +82,14 @@ fun MainAppScreen() {
     },
     bottomBar = {
       NavigationBar(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp,
         modifier = Modifier.testTag("bottom_nav")
       ) {
         val items = listOf(
-          NavigationItem("dashboard", "হোম", Icons.Default.Home, Icons.Outlined.Home),
-          NavigationItem("create_order", "বিল তৈরি", Icons.Default.Receipt, Icons.Outlined.Receipt),
-          NavigationItem("history", "ইতিহাস", Icons.Default.History, Icons.Outlined.History),
+          NavigationItem("dashboard", "হোম", Icons.Default.Dashboard, Icons.Outlined.Dashboard),
+          NavigationItem("create_order", "বিল তৈরি", Icons.Default.PostAdd, Icons.Outlined.PostAdd),
+          NavigationItem("history", "ইতিহাস", Icons.Default.ReceiptLong, Icons.Outlined.ReceiptLong),
           NavigationItem("products", "প্রোডাক্ট", Icons.Default.Inventory, Icons.Outlined.Inventory),
           NavigationItem("shops", "দোকান", Icons.Default.Storefront, Icons.Outlined.Storefront)
         )
@@ -113,11 +116,11 @@ fun MainAppScreen() {
             },
             label = { Text(item.label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
             colors = NavigationBarItemDefaults.colors(
-              selectedIconColor = Color(0xFF0061A4),
-              selectedTextColor = Color(0xFF0061A4),
-              indicatorColor = Color(0xFFD1E4FF),
-              unselectedIconColor = Color(0xFF42474E),
-              unselectedTextColor = Color(0xFF42474E)
+              selectedIconColor = MaterialTheme.colorScheme.primary,
+              selectedTextColor = MaterialTheme.colorScheme.primary,
+              indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+              unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+              unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
             modifier = Modifier.testTag("nav_item_${item.route}")
           )

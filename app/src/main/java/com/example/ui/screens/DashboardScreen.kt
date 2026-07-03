@@ -3,6 +3,7 @@ package com.example.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,11 +11,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
+import com.example.ui.viewmodel.ReportFilter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,18 +50,26 @@ fun DashboardScreen(
     onProfileClick: () -> Unit
 ) {
     val stats by viewModel.stats.collectAsState()
-    val recentOrders by viewModel.orders.collectAsState()
+    val recentOrders by viewModel.dashboardOrders.collectAsState()
     val userNameVal by viewModel.userName.collectAsState()
+    val businessNameVal by viewModel.businessName.collectAsState()
+    val dashboardFilterVal by viewModel.dashboardFilter.collectAsState()
     
-    val initials = remember(userNameVal) {
-        val parts = userNameVal.trim().split(Regex("\\s+"))
-        if (parts.size >= 2) {
-            "${parts[0].firstOrNull() ?: ""}${parts[1].firstOrNull() ?: ""}"
-        } else {
-            "${userNameVal.trim().firstOrNull() ?: "U"}"
+    val salesCardTitle = when (dashboardFilterVal) {
+        is ReportFilter.AllTime -> "সব সময়ের মোট বিক্রি"
+        is ReportFilter.Today -> "আজকের মোট বিক্রি"
+        is ReportFilter.SpecificDate -> {
+            val date = (dashboardFilterVal as ReportFilter.SpecificDate).date
+            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+            "${sdf.format(date)}-এর মোট বিক্রি"
         }
-    }.uppercase()
-    
+        is ReportFilter.SpecificMonth -> {
+            val filter = dashboardFilterVal as ReportFilter.SpecificMonth
+            val monthNames = listOf("জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর")
+            "${monthNames[filter.month]} ${filter.year}-এর মোট বিক্রি"
+        }
+    }
+
     val formattedSales = String.format("৳%,.2f", stats.totalSales)
     val formattedCollected = String.format("৳%,.2f", stats.totalCollected)
     val formattedDue = String.format("৳%,.2f", stats.totalDue)
@@ -69,49 +77,257 @@ fun DashboardScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF7F9FF))
+            .background(MaterialTheme.colorScheme.background)
             .testTag("dashboard_screen"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Mockup Header Area
+        // Professional User Profile Header Card
         item {
-            Row(
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(vertical = 4.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             ) {
-                Column {
-                    Text(
-                        text = "ডিস্ট্রো-বুক",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF001D36),
-                        letterSpacing = (-0.5).sp
-                    )
-                    Text(
-                        text = "আজকের সরবরাহ ড্যাশবোর্ড",
-                        fontSize = 13.sp,
-                        color = Color(0xFF42474E),
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                Box(
+                Row(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(Color(0xFF0061A4))
+                        .fillMaxWidth()
                         .clickable { onProfileClick() }
-                        .testTag("dashboard_profile_button"),
-                    contentAlignment = Alignment.Center
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Profile Image
+                    val userAvatarPath by viewModel.userAvatarPath.collectAsState()
+                    val avatarModel = userAvatarPath ?: R.drawable.img_user_avatar
+                    AsyncImage(
+                        model = avatarModel,
+                        contentDescription = "User Avatar",
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(RoundedCornerShape(27.dp))
+                            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(27.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    // User text information
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "সরবরাহকারী ড্যাশবোর্ড",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = userNameVal,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Store,
+                                contentDescription = null,
+                                modifier = Modifier.size(13.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = businessNameVal,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    // Edit Profile icon indicator
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = "Edit Profile",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Report Filter Section
+        item {
+            val context = LocalContext.current
+            var showMonthPicker by remember { mutableStateOf(false) }
+
+            // Trigger standard DatePickerDialog
+            val calendar = Calendar.getInstance()
+            val datePickerDialog = remember {
+                android.app.DatePickerDialog(
+                    context,
+                    { _, year, month, dayOfMonth ->
+                        val selectedCal = Calendar.getInstance()
+                        selectedCal.set(year, month, dayOfMonth)
+                        viewModel.setDashboardFilter(ReportFilter.SpecificDate(selectedCal.time))
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+                )
+            }
+
+            if (showMonthPicker) {
+                MonthPickerDialog(
+                    onDismissRequest = { showMonthPicker = false },
+                    onMonthSelected = { year, month ->
+                        viewModel.setDashboardFilter(ReportFilter.SpecificMonth(year, month))
+                        showMonthPicker = false
+                    }
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = initials,
-                        color = Color.White,
+                        text = "রিপোর্ট ফিল্টার (Filter Reports)",
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    if (dashboardFilterVal != ReportFilter.AllTime) {
+                        Text(
+                            text = "ফিল্টার রিসেট",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable { viewModel.setDashboardFilter(ReportFilter.AllTime) }
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // All Time Chip
+                    val isAllSelected = dashboardFilterVal == ReportFilter.AllTime
+                    FilterChip(
+                        selected = isAllSelected,
+                        onClick = { viewModel.setDashboardFilter(ReportFilter.AllTime) },
+                        label = { Text("সব সময়", fontSize = 12.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Today Chip
+                    val isTodaySelected = dashboardFilterVal == ReportFilter.Today
+                    FilterChip(
+                        selected = isTodaySelected,
+                        onClick = { viewModel.setDashboardFilter(ReportFilter.Today) },
+                        label = { Text("আজ", fontSize = 12.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier.weight(0.8f)
+                    )
+
+                    // Specific Date Chip
+                    val isDateSelected = dashboardFilterVal is ReportFilter.SpecificDate
+                    val dateLabel = if (isDateSelected) {
+                        val date = (dashboardFilterVal as ReportFilter.SpecificDate).date
+                        SimpleDateFormat("dd MMM", Locale.getDefault()).format(date)
+                    } else {
+                        "তারিখ"
+                    }
+                    FilterChip(
+                        selected = isDateSelected,
+                        onClick = { datePickerDialog.show() },
+                        label = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.CalendarToday,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Text(dateLabel, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier.weight(1.1f)
+                    )
+
+                    // Specific Month Chip
+                    val isMonthSelected = dashboardFilterVal is ReportFilter.SpecificMonth
+                    val monthLabel = if (isMonthSelected) {
+                        val filter = dashboardFilterVal as ReportFilter.SpecificMonth
+                        val monthNames = listOf("জানু", "ফেব্রু", "মার্চ", "এপ্রি", "মে", "জুন", "জুলাই", "আগ", "সেপ্টে", "অক্টো", "নভে", "ডিসে")
+                        "${monthNames[filter.month]} '${filter.year.toString().takeLast(2)}"
+                    } else {
+                        "মাস"
+                    }
+                    FilterChip(
+                        selected = isMonthSelected,
+                        onClick = { showMonthPicker = true },
+                        label = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.DateRange,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Text(monthLabel, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier.weight(1.1f)
                     )
                 }
             }
@@ -119,12 +335,13 @@ fun DashboardScreen(
 
         // Key Stats Summary Card
         item {
+            val isDarkMode by viewModel.isDarkMode.collectAsState()
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF0061A4),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
@@ -140,9 +357,9 @@ fun DashboardScreen(
                     ) {
                         Column {
                             Text(
-                                text = "আজকের মোট বিক্রি",
+                                text = salesCardTitle,
                                 fontSize = 13.sp,
-                                color = Color.White.copy(alpha = 0.85f),
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
                                 fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(4.dp))
@@ -156,13 +373,13 @@ fun DashboardScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color.White.copy(alpha = 0.2f))
+                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f))
                                 .padding(8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.TrendingUp,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -176,26 +393,26 @@ fun DashboardScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(Color.White.copy(alpha = 0.15f))
+                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f))
                                 .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = "অর্ডার: ${recentOrders.size}টি",
                                 fontSize = 12.sp,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(Color.White.copy(alpha = 0.15f))
+                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f))
                                 .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = "দোকান: ${stats.activeShops}টি",
                                 fontSize = 12.sp,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -206,39 +423,40 @@ fun DashboardScreen(
 
         // Quick Action Shortcuts
         item {
+            val isDarkMode by viewModel.isDarkMode.collectAsState()
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 QuickActionButton(
-                    icon = Icons.Default.Receipt,
+                    icon = Icons.Outlined.PostAdd,
                     label = "নতুন অর্ডার",
-                    containerColor = Color(0xFFD1E4FF),
-                    contentColor = Color(0xFF001D36),
-                    iconBgColor = Color(0xFF0061A4),
-                    iconColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    iconBgColor = MaterialTheme.colorScheme.primary,
+                    iconColor = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.weight(1.0f).testTag("action_create_order"),
                     onClick = onCreateOrderClick
                 )
                 QuickActionButton(
-                    icon = Icons.Default.Inventory,
+                    icon = Icons.Outlined.Inventory,
                     label = "প্রোডাক্ট লিস্ট",
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF42474E),
-                    iconBgColor = Color(0xFFF0F4F8),
-                    iconColor = Color(0xFF42474E),
-                    border = BorderStroke(1.dp, Color(0xFFC2C7CF)),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    iconBgColor = MaterialTheme.colorScheme.surfaceVariant,
+                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     modifier = Modifier.weight(1.0f).testTag("action_manage_products"),
                     onClick = onManageProductsClick
                 )
                 QuickActionButton(
-                    icon = Icons.Default.Storefront,
+                    icon = Icons.Outlined.Storefront,
                     label = "দোকান ও বকেয়া",
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF42474E),
-                    iconBgColor = Color(0xFFF0F4F8),
-                    iconColor = Color(0xFF42474E),
-                    border = BorderStroke(1.dp, Color(0xFFC2C7CF)),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    iconBgColor = MaterialTheme.colorScheme.surfaceVariant,
+                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     modifier = Modifier.weight(1.0f).testTag("action_manage_shops"),
                     onClick = onManageShopsClick
                 )
@@ -252,34 +470,50 @@ fun DashboardScreen(
 
         // Stats Grid
         item {
+            val isDarkMode by viewModel.isDarkMode.collectAsState()
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 // Large primary due card (since due is highly crucial for supplier)
+                val dueBg = if (isDarkMode) Color(0xFF8C1D18).copy(alpha = 0.2f) else Color(0xFFF9DEDC)
+                val dueColor = if (isDarkMode) Color(0xFFF9DEDC) else Color(0xFF410E0B)
                 MetricCard(
                     title = "মোট বকেয়া (Due Amount)",
                     value = formattedDue,
-                    icon = Icons.Default.AccountBalanceWallet,
-                    containerColor = Color(0xFFF9DEDC),
-                    contentColor = Color(0xFF410E0B)
+                    icon = Icons.Outlined.AccountBalanceWallet,
+                    containerColor = dueBg,
+                    contentColor = dueColor
                 )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    val collectedBg = if (isDarkMode) Color(0xFF1B5E20).copy(alpha = 0.2f) else Color(0xFFD2E8D1)
+                    val collectedColor = if (isDarkMode) Color(0xFFC8E6C9) else Color(0xFF0A210B)
                     MetricCard(
                         title = "মোট আদায়",
                         value = formattedCollected,
-                        icon = Icons.Default.CheckCircle,
-                        containerColor = Color(0xFFD2E8D1),
-                        contentColor = Color(0xFF0A210B),
+                        icon = Icons.Outlined.CheckCircle,
+                        containerColor = collectedBg,
+                        contentColor = collectedColor,
                         modifier = Modifier.weight(1f)
                     )
+                    
+                    val warningBg = if (stats.lowStockCount > 0) {
+                        if (isDarkMode) Color(0xFFE65100).copy(alpha = 0.2f) else Color(0xFFFFF3E0)
+                    } else {
+                        if (isDarkMode) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFECEFF1)
+                    }
+                    val warningColor = if (stats.lowStockCount > 0) {
+                        if (isDarkMode) Color(0xFFFFD180) else Color(0xFFE65100)
+                    } else {
+                        if (isDarkMode) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF42474E)
+                    }
                     MetricCard(
                         title = "স্টক সতর্কবার্তা",
                         value = "${stats.lowStockCount} টি প্রোডাক্ট",
-                        icon = Icons.Default.Warning,
-                        containerColor = if (stats.lowStockCount > 0) Color(0xFFFFF3E0) else Color(0xFFECEFF1),
-                        contentColor = if (stats.lowStockCount > 0) Color(0xFFE65100) else Color(0xFF42474E),
+                        icon = Icons.Outlined.ProductionQuantityLimits,
+                        containerColor = warningBg,
+                        contentColor = warningColor,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -287,6 +521,12 @@ fun DashboardScreen(
         }
 
         // Recent Orders Header
+        val recentBillsTitle = when (dashboardFilterVal) {
+            is ReportFilter.AllTime -> "সাম্প্রতিক বিলিং"
+            is ReportFilter.Today -> "আজকের বিলিং"
+            is ReportFilter.SpecificDate -> "তারিখের বিলিং"
+            is ReportFilter.SpecificMonth -> "মাসের বিলিং"
+        }
         item {
             Row(
                 modifier = Modifier
@@ -296,10 +536,10 @@ fun DashboardScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "সাম্প্রতিক বিলিং",
+                    text = recentBillsTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1C1E)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -310,8 +550,10 @@ fun DashboardScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFC2C7CF))
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 ) {
                     Column(
                         modifier = Modifier
@@ -321,9 +563,9 @@ fun DashboardScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ReceiptLong,
+                            imageVector = Icons.Outlined.ReceiptLong,
                             contentDescription = null,
-                            tint = Color(0xFF72777F),
+                            tint = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(48.dp)
                         )
                         Text(
@@ -453,14 +695,14 @@ fun MiniInfoCard(
     title: String,
     value: String,
     icon: ImageVector,
-    iconColor: Color = Color(0xFF0061A4),
+    iconColor: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFC2C7CF)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(
@@ -480,14 +722,14 @@ fun MiniInfoCard(
                 Text(
                     text = title,
                     fontSize = 11.sp,
-                    color = Color(0xFF42474E),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
                     text = value,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1C1E)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -507,8 +749,8 @@ fun RecentOrderRow(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFE0E2EC))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier
@@ -527,13 +769,13 @@ fun RecentOrderRow(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFFE0E2EC)),
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Receipt,
+                        imageVector = Icons.Outlined.ReceiptLong,
                         contentDescription = null,
-                        tint = Color(0xFF42474E),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -543,7 +785,7 @@ fun RecentOrderRow(
                         text = order.shopName,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1C1E),
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -551,7 +793,7 @@ fun RecentOrderRow(
                     Text(
                         text = "${order.items.size}টি আইটেম • $dateStr",
                         fontSize = 11.sp,
-                        color = Color(0xFF72777F)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -561,7 +803,7 @@ fun RecentOrderRow(
                     text = String.format("৳%,.0f", order.totalAmount),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFF0061A4)
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 
@@ -585,4 +827,81 @@ fun RecentOrderRow(
             }
         }
     }
+}
+
+@Composable
+fun MonthPickerDialog(
+    onDismissRequest: () -> Unit,
+    onMonthSelected: (year: Int, month: Int) -> Unit
+) {
+    val currentCalendar = Calendar.getInstance()
+    var selectedYear by remember { mutableStateOf(currentCalendar.get(Calendar.YEAR)) }
+    
+    val monthNames = listOf("জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর")
+    
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = {
+            Text("মাস সিলেক্ট করুন", fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Year Selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { selectedYear -= 1 }) {
+                        Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Previous Year")
+                    }
+                    Text(
+                        text = "$selectedYear সাল",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    IconButton(onClick = { selectedYear += 1 }) {
+                        Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Next Year")
+                    }
+                }
+                
+                // Months Grid (4x3 grid)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (row in 0 until 4) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (col in 0 until 3) {
+                                val monthIdx = row * 3 + col
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .clickable {
+                                            onMonthSelected(selectedYear, monthIdx)
+                                        }
+                                        .padding(vertical = 12.dp, horizontal = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = monthNames[monthIdx],
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("বাতিল")
+            }
+        }
+    )
 }

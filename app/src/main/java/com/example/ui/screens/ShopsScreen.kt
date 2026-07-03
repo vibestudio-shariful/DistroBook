@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -62,7 +64,7 @@ fun ShopsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF7F9FF))
+            .background(MaterialTheme.colorScheme.background)
             .testTag("shops_screen")
     ) {
         Column(
@@ -76,11 +78,11 @@ fun ShopsScreen(
                 onValueChange = { searchQuery = it },
                 label = { Text("দোকান খুঁজুন (Search Shops)") },
                 placeholder = { Text("দোকানের নাম, ফোন নম্বর বা ঠিকানা...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear")
+                            Icon(Icons.Outlined.Close, contentDescription = "Clear")
                         }
                     }
                 },
@@ -116,7 +118,7 @@ fun ShopsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Storefront,
+                            imageVector = Icons.Outlined.Storefront,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(64.dp)
@@ -175,7 +177,7 @@ fun ShopsScreen(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
         ) {
-            Icon(Icons.Default.Add, contentDescription = "দোকান যোগ করুন")
+            Icon(Icons.Outlined.Add, contentDescription = "দোকান যোগ করুন")
         }
     }
 
@@ -218,7 +220,7 @@ fun ShopsScreen(
                 ) {
                     Text(text = shop.name, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     IconButton(onClick = { selectedShopDetails = null }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Outlined.Close, contentDescription = "Close")
                     }
                 }
             },
@@ -237,7 +239,7 @@ fun ShopsScreen(
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (shop.ownerName.isNotBlank()) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Outlined.Person, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
                                     Text(text = "মালিক: ${shop.ownerName}", fontSize = 14.sp)
                                 }
                             }
@@ -248,7 +250,7 @@ fun ShopsScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Icon(Icons.Default.Call, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Outlined.Call, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
                                         Text(text = "মোবাইল: ${shop.phone}", fontSize = 14.sp)
                                     }
                                     IconButton(
@@ -258,13 +260,13 @@ fun ShopsScreen(
                                         },
                                         modifier = Modifier.size(32.dp)
                                     ) {
-                                        Icon(Icons.Default.Call, contentDescription = "Call", tint = Color(0xFF2E7D32))
+                                        Icon(Icons.Outlined.Call, contentDescription = "Call", tint = Color(0xFF2E7D32))
                                     }
                                 }
                             }
                             if (shop.address.isNotBlank()) {
                                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
                                     Text(text = "ঠিকানা: ${shop.address}", fontSize = 14.sp)
                                 }
                             }
@@ -385,8 +387,8 @@ fun ShopItemRow(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFC2C7CF))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -414,7 +416,7 @@ fun ShopItemRow(
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     IconButton(onClick = onEditClick, modifier = Modifier.size(36.dp)) {
                         Icon(
-                            imageVector = Icons.Default.Edit,
+                            imageVector = Icons.Outlined.Edit,
                             contentDescription = "Edit",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
@@ -422,7 +424,7 @@ fun ShopItemRow(
                     }
                     IconButton(onClick = onDeleteClick, modifier = Modifier.size(36.dp)) {
                         Icon(
-                            imageVector = Icons.Default.Delete,
+                            imageVector = Icons.Outlined.Delete,
                             contentDescription = "Delete",
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(20.dp)
@@ -441,21 +443,30 @@ fun ShopItemRow(
                 Column {
                     if (shop.phone.isNotBlank()) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
+                            Icon(Icons.Outlined.Call, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
                             Text(text = shop.phone, fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
                         }
                     }
                     if (shop.address.isNotBlank()) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
+                            Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
                             Text(text = shop.address, fontSize = 11.sp, color = MaterialTheme.colorScheme.outline, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
 
                 // Outstanding Due Badge
-                val dueBg = if (dueAmount > 0) Color(0xFFF9DEDC) else Color(0xFFD2E8D1)
-                val dueColor = if (dueAmount > 0) Color(0xFF410E0B) else Color(0xFF0A210B)
+                val isDark = isSystemInDarkTheme()
+                val dueBg = if (dueAmount > 0) {
+                    if (isDark) Color(0xFF8C1D18).copy(alpha = 0.2f) else Color(0xFFF9DEDC)
+                } else {
+                    if (isDark) Color(0xFF1B5E20).copy(alpha = 0.2f) else Color(0xFFD2E8D1)
+                }
+                val dueColor = if (dueAmount > 0) {
+                    if (isDark) Color(0xFFF9DEDC) else Color(0xFF410E0B)
+                } else {
+                    if (isDark) Color(0xFFC8E6C9) else Color(0xFF0A210B)
+                }
                 val dueText = if (dueAmount > 0) "বকেয়া: ৳${String.format("%,.0f", dueAmount)}" else "কোনো বকেয়া নেই"
 
                 Box(

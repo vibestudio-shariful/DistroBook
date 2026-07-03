@@ -3,6 +3,7 @@ package com.example.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,7 +49,7 @@ fun ProductsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF7F9FF))
+            .background(MaterialTheme.colorScheme.background)
             .testTag("products_screen")
     ) {
         Column(
@@ -61,11 +63,11 @@ fun ProductsScreen(
                 onValueChange = { searchQuery = it },
                 label = { Text("প্রোডাক্ট খুঁজুন (Search Products)") },
                 placeholder = { Text("প্রোডাক্টের নাম লিখুন...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear")
+                            Icon(Icons.Outlined.Close, contentDescription = "Clear")
                         }
                     }
                 },
@@ -107,7 +109,7 @@ fun ProductsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Inventory,
+                            imageVector = Icons.Outlined.Inventory,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(64.dp)
@@ -164,7 +166,7 @@ fun ProductsScreen(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
         ) {
-            Icon(Icons.Default.Add, contentDescription = "প্রোডাক্ট যোগ করুন")
+            Icon(Icons.Outlined.Add, contentDescription = "প্রোডাক্ট যোগ করুন")
         }
     }
 
@@ -227,8 +229,8 @@ fun ProductItemRow(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFC2C7CF))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Header: Name & Action buttons
@@ -259,7 +261,7 @@ fun ProductItemRow(
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     IconButton(onClick = onEditClick, modifier = Modifier.size(36.dp)) {
                         Icon(
-                            imageVector = Icons.Default.Edit,
+                            imageVector = Icons.Outlined.Edit,
                             contentDescription = "Edit",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
@@ -267,7 +269,7 @@ fun ProductItemRow(
                     }
                     IconButton(onClick = onDeleteClick, modifier = Modifier.size(36.dp)) {
                         Icon(
-                            imageVector = Icons.Default.Delete,
+                            imageVector = Icons.Outlined.Delete,
                             contentDescription = "Delete",
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(20.dp)
@@ -294,8 +296,21 @@ fun ProductItemRow(
                     Spacer(modifier = Modifier.height(4.dp))
                     
                     val isLowStock = product.stock <= 5
-                    val stockBg = if (product.stock == 0) Color(0xFFF9DEDC) else if (isLowStock) Color(0xFFFFF3E0) else Color(0xFFD2E8D1)
-                    val stockColor = if (product.stock == 0) Color(0xFF410E0B) else if (isLowStock) Color(0xFFE65100) else Color(0xFF0A210B)
+                    val isDark = isSystemInDarkTheme()
+                    val stockBg = if (product.stock == 0) {
+                        if (isDark) Color(0xFF8C1D18).copy(alpha = 0.2f) else Color(0xFFF9DEDC)
+                    } else if (isLowStock) {
+                        if (isDark) Color(0xFFE65100).copy(alpha = 0.2f) else Color(0xFFFFF3E0)
+                    } else {
+                        if (isDark) Color(0xFF1B5E20).copy(alpha = 0.2f) else Color(0xFFD2E8D1)
+                    }
+                    val stockColor = if (product.stock == 0) {
+                        if (isDark) Color(0xFFF9DEDC) else Color(0xFF410E0B)
+                    } else if (isLowStock) {
+                        if (isDark) Color(0xFFFFD180) else Color(0xFFE65100)
+                    } else {
+                        if (isDark) Color(0xFFC8E6C9) else Color(0xFF0A210B)
+                    }
                     val stockText = if (product.stock == 0) "স্টক শেষ (Out of Stock)" else "স্টক: ${product.stock} টি"
 
                     Box(

@@ -2,23 +2,27 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val PrimaryBlue = Color(0xFF0061A4)
+// Premium deep color palette
+val PrimaryBlue = Color(0xFF004275) // Deeper, premium royal blue
 val OnPrimaryWhite = Color(0xFFFFFFFF)
-val SecondaryBlue = Color(0xFFD1E4FF)
-val DarkTextBlue = Color(0xFF001D36)
-val GrayText = Color(0xFF42474E)
-val LightBg = Color(0xFFF7F9FF)
-val BorderGray = Color(0xFFC2C7CF)
+val SecondaryBlue = Color(0xFFD3E4FF)
+val DarkTextBlue = Color(0xFF001E35)
+val GrayText = Color(0xFF3F4853)
+val LightBg = Color(0xFFF3F6FA) // Balanced soft cool slate light background
+val BorderGray = Color(0xFFBEC8D2)
 
-val PaidGreenBg = Color(0xFFD2E8D1)
-val PaidGreenText = Color(0xFF0A210B)
-val DueRedBg = Color(0xFFF9DEDC)
-val DueRedText = Color(0xFF410E0B)
+val PaidGreenBg = Color(0xFFD4EAD6)
+val PaidGreenText = Color(0xFF0F3D1C)
+val DueRedBg = Color(0xFFFADCD9)
+val DueRedText = Color(0xFF5A1210)
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Beautiful deep dark mode specific colors
+val DarkPrimary = Color(0xFF9ECAFF)
+val DarkOnPrimary = Color(0xFF003258)
+val DarkPrimaryContainer = Color(0xFF00497E)
+val DarkOnPrimaryContainer = Color(0xFFD1E4FF)
+val DarkBackground = Color(0xFF080C14) // Deep navy-black canvas
+val DarkSurface = Color(0xFF101622)    // High-contrast deep slate card container
+val DarkOnSurface = Color(0xFFE1E6EC)
+val DarkBorder = Color(0xFF424951)
+val DarkGrayText = Color(0xFFA5ADB7)

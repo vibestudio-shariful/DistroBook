@@ -3,8 +3,11 @@ package com.example.ui.screens
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.R
 import com.example.ui.viewmodel.AppViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,6 +45,7 @@ fun ProfileScreen(
     val currentUserPhone by viewModel.userPhone.collectAsState()
     val currentUserEmail by viewModel.userEmail.collectAsState()
     val currentUserAddress by viewModel.userAddress.collectAsState()
+    val isDarkMode by viewModel.isDarkMode.collectAsState()
 
     // Form states
     var nameInput by remember(currentUserName) { mutableStateOf(currentUserName) }
@@ -48,10 +54,59 @@ fun ProfileScreen(
     var emailInput by remember(currentUserEmail) { mutableStateOf(currentUserEmail) }
     var addressInput by remember(currentUserAddress) { mutableStateOf(currentUserAddress) }
 
+    // Backup File Picker Launcher
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.importBackup(
+                context = context,
+                uri = uri,
+                onSuccess = {
+                    Toast.makeText(context, "ডেটা সফলভাবে রিস্টোর হয়েছে!", Toast.LENGTH_LONG).show()
+                },
+                onError = { error ->
+                    Toast.makeText(context, "রিস্টোর ব্যর্থ হয়েছে: $error", Toast.LENGTH_LONG).show()
+                }
+            )
+        }
+    }
+
+    // Photo picker for User Profile Avatar
+    val avatarLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.saveUserAvatar(context, uri)
+            Toast.makeText(context, "প্রোফাইল ছবি সফলভাবে আপডেট হয়েছে!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // SAF-based backup file creator
+    val fileDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+    val defaultFilename = "distro_book_backup_$fileDate.json"
+
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.exportBackupToUri(
+                context = context,
+                uri = uri,
+                onSuccess = {
+                    Toast.makeText(context, "ব্যাকআপ সরাসরি মেমোরিতে সেভ করা হয়েছে!", Toast.LENGTH_LONG).show()
+                },
+                onError = { error ->
+                    Toast.makeText(context, "ব্যাকআপ সেভ ব্যর্থ হয়েছে: $error", Toast.LENGTH_LONG).show()
+                }
+            )
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("প্রোফাইল ও ডেভেলপার তথ্য", fontWeight = FontWeight.Bold, fontSize = 20.sp) },
+                title = { Text("প্রোফাইল ও সেটিংস", fontWeight = FontWeight.Bold, fontSize = 20.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -68,7 +123,7 @@ fun ProfileScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF7F9FF))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
                 .testTag("profile_screen"),
             contentPadding = PaddingValues(16.dp),
@@ -78,8 +133,8 @@ fun ProfileScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFC2C7CF)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
@@ -92,16 +147,78 @@ fun ProfileScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF0061A4))
+                            Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Text(
                                 text = "ব্যবহারকারী প্রোফাইল এডিট",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF001D36)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
-                        Divider(color = Color(0xFFC2C7CF).copy(alpha = 0.5f))
+                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+
+                        // Profile Avatar Section
+                        val userAvatarPath by viewModel.userAvatarPath.collectAsState()
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clickable {
+                                        avatarLauncher.launch("image/*")
+                                    }
+                            ) {
+                                val avatarModel = userAvatarPath ?: R.drawable.img_user_avatar
+                                AsyncImage(
+                                    model = avatarModel,
+                                    contentDescription = "User Profile Picture",
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(RoundedCornerShape(50.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(50.dp)),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                                
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .size(30.dp)
+                                        .clip(RoundedCornerShape(15.dp))
+                                        .background(MaterialTheme.colorScheme.primary)
+                                        .border(1.5.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(15.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CameraAlt,
+                                        contentDescription = "Change avatar",
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            
+                            if (userAvatarPath != null) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "ছবি মুছুন",
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier
+                                        .clickable {
+                                            viewModel.deleteUserAvatar()
+                                            Toast.makeText(context, "প্রোফাইল ছবি মুছে ফেলা হয়েছে", Toast.LENGTH_SHORT).show()
+                                        }
+                                        .padding(4.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         OutlinedTextField(
                             value = nameInput,
@@ -112,8 +229,8 @@ fun ProfileScreen(
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF0061A4),
-                                unfocusedBorderColor = Color(0xFFC2C7CF)
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
 
@@ -126,8 +243,8 @@ fun ProfileScreen(
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF0061A4),
-                                unfocusedBorderColor = Color(0xFFC2C7CF)
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
 
@@ -141,8 +258,8 @@ fun ProfileScreen(
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF0061A4),
-                                unfocusedBorderColor = Color(0xFFC2C7CF)
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
 
@@ -155,8 +272,8 @@ fun ProfileScreen(
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF0061A4),
-                                unfocusedBorderColor = Color(0xFFC2C7CF)
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
 
@@ -169,8 +286,8 @@ fun ProfileScreen(
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF0061A4),
-                                unfocusedBorderColor = Color(0xFFC2C7CF)
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
 
@@ -194,7 +311,7 @@ fun ProfileScreen(
                                 .height(48.dp)
                                 .testTag("profile_save_button"),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0061A4))
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Icon(Icons.Default.Save, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
@@ -204,12 +321,140 @@ fun ProfileScreen(
                 }
             }
 
-            // Section 2: App Developer Info Card
+            // Section 2: Dark Mode Settings Card
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F0FE)),
-                    border = BorderStroke(1.5.dp, Color(0xFF0061A4)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Column {
+                                Text(
+                                    text = "ডার্ক মোড (Dark Mode)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "চোখের সুরক্ষায় ডার্ক থিম সক্রিয় করুন",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = isDarkMode,
+                            onCheckedChange = { viewModel.setDarkMode(it) }
+                        )
+                    }
+                }
+            }
+
+            // Section 3: Data Backup & Restore Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Default.Backup, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Column {
+                                Text(
+                                    text = "ডেটা ব্যাকআপ ও রিস্টোর (Backup & Restore)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "হিসাব নিকাশ সুরক্ষিত রাখুন এবং নতুন ফোনে রিস্টোর করুন",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Backup Button
+                            Button(
+                                onClick = {
+                                    try {
+                                        createDocumentLauncher.launch(defaultFilename)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "ব্যাকআপ ক্রিয়েটর ওপেন করা যায়নি", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("ব্যাকআপ", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+
+                            // Restore Button
+                            OutlinedButton(
+                                onClick = {
+                                    try {
+                                        filePickerLauncher.launch("*/*")
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "রিস্টোর লঞ্চার ওপেন করা যায়নি", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("রিস্টোর", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Section 4: App Developer Info Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
@@ -222,18 +467,17 @@ fun ProfileScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.Code, contentDescription = null, tint = Color(0xFF0061A4))
+                            Icon(Icons.Default.Code, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Text(
                                 text = "অ্যাপ ডেভেলপার তথ্য",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF001D36)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
-                        Divider(color = Color(0xFF0061A4).copy(alpha = 0.3f))
+                        Divider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
 
-                        // Developer info rows
                         DeveloperInfoRow(
                             label = "ডেভেলপার নাম",
                             value = "Shariful Islam",
@@ -273,12 +517,12 @@ fun ProfileScreen(
                 }
             }
 
-            // Section 3: App Information Card
+            // Section 5: App Information Card
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFC2C7CF)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
@@ -291,20 +535,20 @@ fun ProfileScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFF42474E))
+                            Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
                                 text = "অ্যাপের বিবরণ",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1A1C1E)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
-                        Divider(color = Color(0xFFC2C7CF).copy(alpha = 0.5f))
+                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
 
-                        Text("অ্যাপের নাম: ডিস্ট্রো-বুক (Distro-Book)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        Text("সংস্করণ: ১.০.৪ (v1.0.4)", fontSize = 13.sp, color = Color(0xFF42474E))
-                        Text("উদ্দেশ্য: দোকান সরবরাহ ও ডিস্ট্রিবিউশন হিসাব রক্ষণাবেক্ষণ এবং সেলস ট্র্যাকিং ডায়েরি।", fontSize = 13.sp, color = Color(0xFF42474E))
+                        Text("অ্যাপের নাম: ডিস্ট্রো-বুক (Distro-Book)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("সংস্করণ: ১.০.৪ (v1.0.4)", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("উদ্দেশ্য: দোকান সরবরাহ ও ডিস্ট্রিবিউশন হিসাব রক্ষণাবেক্ষণ এবং সেলস ট্র্যাকিং ডায়েরি।", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -332,19 +576,19 @@ fun DeveloperInfoRow(
             modifier = Modifier
                 .size(36.dp)
                 .clip(RoundedCornerShape(18.dp))
-                .background(Color(0xFF0061A4).copy(alpha = 0.1f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = Color(0xFF0061A4), modifier = Modifier.size(18.dp))
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
         }
 
         Column {
-            Text(label, fontSize = 11.sp, color = Color(0xFF42474E))
+            Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 text = value,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isClickable) Color(0xFF0061A4) else Color(0xFF1A1C1E)
+                color = if (isClickable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
         }
     }

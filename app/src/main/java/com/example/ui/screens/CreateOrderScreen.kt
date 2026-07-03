@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,6 +52,8 @@ fun CreateOrderScreen(
     
     var paidAmountStr by remember { mutableStateOf("") }
     var remarks by remember { mutableStateOf("") }
+    
+    var showReviewDialog by remember { mutableStateOf(false) }
 
     // Live calculations
     val filteredProducts = remember(products, searchQuery) {
@@ -85,7 +88,7 @@ fun CreateOrderScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF7F9FF))
+            .background(MaterialTheme.colorScheme.background)
             .testTag("create_order_screen")
     ) {
         // Scrollable content (Shop selection + Product selections)
@@ -171,11 +174,11 @@ fun CreateOrderScreen(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
                         placeholder = { Text("প্রোডাক্ট খুঁজুন... (Search Product)") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF0061A4)) },
+                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary) },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color(0xFF42474E))
+                                    Icon(Icons.Outlined.Close, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         },
@@ -186,10 +189,10 @@ fun CreateOrderScreen(
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFF0061A4),
-                            unfocusedBorderColor = Color(0xFFC2C7CF)
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         )
                     )
                 }
@@ -210,8 +213,8 @@ fun CreateOrderScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.Inventory, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(48.dp))
-                            Text("প্রথমে কিছু প্রোডাক্ট এন্ট্রি করে নিন!", fontWeight = FontWeight.Bold)
+                            Icon(Icons.Outlined.Inventory, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(48.dp))
+                            Text("প্রথমে কিছু প্রোডাক্ট এন্ট্রি করে নিন!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -221,8 +224,8 @@ fun CreateOrderScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        border = BorderStroke(1.dp, Color(0xFFC2C7CF))
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                     ) {
                         Column(
                             modifier = Modifier
@@ -231,19 +234,20 @@ fun CreateOrderScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFFBA1A1A), modifier = Modifier.size(40.dp))
-                            Text("এই নামে কোনো প্রোডাক্ট পাওয়া যায়নি!", fontWeight = FontWeight.Bold, color = Color(0xFF42474E))
+                            Icon(Icons.Outlined.Search, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(40.dp))
+                            Text("এই নামে কোনো প্রোডাক্ট পাওয়া যায়নি!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             } else {
                 items(filteredProducts, key = { it.id }) { product ->
                     val selectedQty = selectedQuantities[product.id] ?: 0
+                    val isSelected = selectedQuantities.containsKey(product.id)
 
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable(enabled = selectedQty == 0) {
+                            .clickable(enabled = !isSelected) {
                                 if (product.stock > 0) {
                                     selectedQuantities[product.id] = 1
                                 } else {
@@ -251,11 +255,11 @@ fun CreateOrderScreen(
                                 }
                             },
                         colors = CardDefaults.cardColors(
-                            containerColor = if (selectedQty > 0) Color(0xFFE8F0FE) else Color.White
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
                         ),
                         border = BorderStroke(
-                            width = if (selectedQty > 0) 1.5.dp else 1.dp,
-                            color = if (selectedQty > 0) Color(0xFF0061A4) else Color(0xFFC2C7CF)
+                            width = if (isSelected) 1.5.dp else 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                         )
                     ) {
                         Column(
@@ -270,7 +274,7 @@ fun CreateOrderScreen(
                             ) {
                                 // Product Info
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(product.name, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    Text(product.name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
                                     val currentPriceVal = customPrices[product.id] ?: product.price
                                     Text(
                                         text = "৳${String.format("%,.2f", currentPriceVal)}",
@@ -293,11 +297,13 @@ fun CreateOrderScreen(
                                 ) {
                                     IconButton(
                                         onClick = {
-                                            if (selectedQty > 0) {
+                                            if (selectedQty > 1) {
                                                 selectedQuantities[product.id] = selectedQty - 1
+                                            } else {
+                                                selectedQuantities.remove(product.id)
                                             }
                                         },
-                                        enabled = selectedQty > 0,
+                                        enabled = isSelected,
                                         modifier = Modifier
                                             .size(36.dp)
                                             .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
@@ -309,7 +315,8 @@ fun CreateOrderScreen(
                                         text = selectedQty.toString(),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp,
-                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 4.dp),
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
 
                                     IconButton(
@@ -334,11 +341,11 @@ fun CreateOrderScreen(
                             }
 
                             // Manual inputs when selected
-                            if (selectedQty > 0) {
+                            if (isSelected) {
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     // Custom Price Manual Field
@@ -348,10 +355,12 @@ fun CreateOrderScreen(
                                     OutlinedTextField(
                                         value = priceInputVal,
                                         onValueChange = { newValue ->
-                                            priceInputVal = newValue
-                                            val parsed = newValue.toDoubleOrNull()
-                                            if (parsed != null && parsed >= 0.0) {
-                                                customPrices[product.id] = parsed
+                                            if (newValue.isEmpty() || newValue.toDoubleOrNull() != null || newValue == ".") {
+                                                priceInputVal = newValue
+                                                val parsed = newValue.toDoubleOrNull()
+                                                if (parsed != null && parsed >= 0.0) {
+                                                    customPrices[product.id] = parsed
+                                                }
                                             }
                                         },
                                         label = { Text("দাম (৳)", fontSize = 11.sp) },
@@ -359,32 +368,42 @@ fun CreateOrderScreen(
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
                                         colors = OutlinedTextFieldDefaults.colors(
-                                            focusedContainerColor = Color.White,
-                                            unfocusedContainerColor = Color.White,
-                                            focusedBorderColor = Color(0xFF0061A4),
-                                            unfocusedBorderColor = Color(0xFFC2C7CF)
+                                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                                         )
                                     )
 
-                                    // Custom Quantity Manual Field
-                                    var qtyInputVal by remember(selectedQty) {
+                                    // Custom Quantity Manual Field (Robust fix to avoid collapsing keyboard on clear)
+                                    var qtyInputVal by remember(product.id) {
                                         mutableStateOf(selectedQty.toString())
                                     }
+                                    
+                                    LaunchedEffect(selectedQty) {
+                                        if (selectedQty > 0 && qtyInputVal.toIntOrNull() != selectedQty) {
+                                            qtyInputVal = selectedQty.toString()
+                                        }
+                                    }
+
                                     OutlinedTextField(
                                         value = qtyInputVal,
                                         onValueChange = { newValue ->
-                                            qtyInputVal = newValue
-                                            val parsed = newValue.toIntOrNull()
-                                            if (parsed != null) {
-                                                if (parsed <= product.stock) {
-                                                    selectedQuantities[product.id] = parsed
-                                                } else {
-                                                    Toast.makeText(context, "স্টকের চেয়ে বেশি দেওয়া সম্ভব নয়!", Toast.LENGTH_SHORT).show()
-                                                    selectedQuantities[product.id] = product.stock
-                                                    qtyInputVal = product.stock.toString()
+                                            if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                                                qtyInputVal = newValue
+                                                val parsed = newValue.toIntOrNull()
+                                                if (parsed != null && parsed > 0) {
+                                                    if (parsed <= product.stock) {
+                                                        selectedQuantities[product.id] = parsed
+                                                    } else {
+                                                        Toast.makeText(context, "স্টকের চেয়ে বেশি দেওয়া সম্ভব নয়!", Toast.LENGTH_SHORT).show()
+                                                        selectedQuantities[product.id] = product.stock
+                                                        qtyInputVal = product.stock.toString()
+                                                    }
+                                                } else if (newValue.isEmpty()) {
+                                                    // Keep selection active as 1 to avoid focus loss or keyboard closing
+                                                    selectedQuantities[product.id] = 1
                                                 }
-                                            } else if (newValue.isEmpty()) {
-                                                selectedQuantities[product.id] = 0
                                             }
                                         },
                                         label = { Text("পরিমাণ (টি)", fontSize = 11.sp) },
@@ -392,12 +411,26 @@ fun CreateOrderScreen(
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
                                         colors = OutlinedTextFieldDefaults.colors(
-                                            focusedContainerColor = Color.White,
-                                            unfocusedContainerColor = Color.White,
-                                            focusedBorderColor = Color(0xFF0061A4),
-                                            unfocusedBorderColor = Color(0xFFC2C7CF)
+                                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                                         )
                                     )
+
+                                    // Quick Unselect Action
+                                    IconButton(
+                                        onClick = {
+                                            selectedQuantities.remove(product.id)
+                                        },
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Delete,
+                                            contentDescription = "Remove Item",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -411,8 +444,8 @@ fun CreateOrderScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(1.dp, Color(0xFFC2C7CF))
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
         ) {
             Column(
                 modifier = Modifier
@@ -429,7 +462,8 @@ fun CreateOrderScreen(
                     Text(
                         text = "মোট আইটেম: ${selectedItemsList.size} টি",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "মোট বিল: ৳${String.format("%,.2f", totalAmount)}",
@@ -457,7 +491,13 @@ fun CreateOrderScreen(
                             .weight(1.5f)
                             .testTag("order_paid_input"),
                         shape = RoundedCornerShape(10.dp),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        )
                     )
 
                     Column(
@@ -481,10 +521,16 @@ fun CreateOrderScreen(
                     placeholder = { Text("যেমন- গাড়ি ভাড়া ৫০ টাকা") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
                 )
 
-                // Confirm action button
+                // Confirm action button (Triggers the Review Dialog first!)
                 Button(
                     onClick = {
                         val shop = selectedShop
@@ -493,7 +539,171 @@ fun CreateOrderScreen(
                         } else if (selectedItemsList.isEmpty()) {
                             Toast.makeText(context, "দয়া করে অন্ততঃ ১টি প্রোডাক্ট সিলেক্ট করুন!", Toast.LENGTH_LONG).show()
                         } else {
-                            // Save Order
+                            // Show review before final confirm
+                            showReviewDialog = true
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .testTag("confirm_order_button"),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Outlined.ReceiptLong, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("অর্ডার রিভিউ ও নিশ্চিত করুন", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                }
+            }
+        }
+    }
+
+    // Gorgeous Order Review Modal Dialog
+    if (showReviewDialog) {
+        AlertDialog(
+            onDismissRequest = { showReviewDialog = false },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(Icons.Outlined.RateReview, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Text("অর্ডার রিভিউ (Review Order)", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "দোকান: ${selectedShop?.name}",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 15.sp
+                    )
+                    
+                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    
+                    Text("আইটেম তালিকা (এখান থেকে পরিবর্তন করতে পারবেন):", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                    
+                    // Display list of selected items with quick controllers
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 240.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(selectedItemsList) { item ->
+                            val product = products.find { it.id == item.productId }
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(item.productName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                        Text("৳${String.format("%,.2f", item.price)} x ${item.quantity} টি", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("মোট: ৳${String.format("%,.2f", item.totalLinePrice)}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                                    }
+                                    
+                                    // Quick controllers inside review dialog
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        // Decrement
+                                        IconButton(
+                                            onClick = {
+                                                if (item.quantity > 1) {
+                                                    selectedQuantities[item.productId] = item.quantity - 1
+                                                } else {
+                                                    selectedQuantities.remove(item.productId)
+                                                }
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(Icons.Default.Remove, contentDescription = "Deduct", modifier = Modifier.size(14.dp))
+                                        }
+                                        
+                                        Text(
+                                            text = item.quantity.toString(),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        
+                                        // Increment
+                                        IconButton(
+                                            onClick = {
+                                                if (product != null && item.quantity < product.stock) {
+                                                    selectedQuantities[item.productId] = item.quantity + 1
+                                                } else {
+                                                    Toast.makeText(context, "স্টকের চেয়ে বেশি নেই!", Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(14.dp))
+                                        }
+                                        
+                                        // Remove entirely
+                                        IconButton(
+                                            onClick = {
+                                                selectedQuantities.remove(item.productId)
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    
+                    // Live Bill details inside review
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("মোট বিল:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("৳${String.format("%,.2f", totalAmount)}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("আদায়কৃত টাকা:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("৳${String.format("%,.2f", paidAmount)}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("অবশিষ্ট বকেয়া:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(
+                            text = "৳${String.format("%,.2f", dueAmount)}",
+                            fontWeight = FontWeight.Bold,
+                            color = if (dueAmount > 0) MaterialTheme.colorScheme.error else Color(0xFF2E7D32)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val shop = selectedShop
+                        if (shop != null && selectedItemsList.isNotEmpty()) {
                             viewModel.createOrder(
                                 shopId = shop.id,
                                 shopName = shop.name,
@@ -503,20 +713,24 @@ fun CreateOrderScreen(
                                 remarks = remarks
                             )
                             Toast.makeText(context, "বিল সফলভাবে সংরক্ষণ ও স্টক আপডেট করা হয়েছে!", Toast.LENGTH_LONG).show()
+                            showReviewDialog = false
                             onOrderPlacedSuccessfully()
+                        } else {
+                            Toast.makeText(context, "কোনো আইটেম সিলেক্ট করা নেই!", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .testTag("confirm_order_button"),
-                    shape = RoundedCornerShape(10.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Icon(Icons.Default.Receipt, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("অর্ডার নিশ্চিত ও বিল তৈরি করুন", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text("অর্ডার নিশ্চিত করুন")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showReviewDialog = false }
+                ) {
+                    Text("সম্পাদনা করুন")
                 }
             }
-        }
+        )
     }
 }

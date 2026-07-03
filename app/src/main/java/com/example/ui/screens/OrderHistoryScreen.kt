@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,12 +23,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.Order
 import com.example.ui.viewmodel.AppViewModel
+import com.example.ui.viewmodel.ReportFilter
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -40,12 +43,13 @@ fun OrderHistoryScreen(
     
     var searchQuery by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf(0) } // 0 = All, 1 = Due, 2 = Paid
+    var historyFilter by remember { mutableStateOf<ReportFilter>(ReportFilter.AllTime) }
     
     var selectedOrderDetails by remember { mutableStateOf<Order?>(null) }
     var showDeleteConfirmation by remember { mutableStateOf<Order?>(null) }
     var showPaymentUpdateDialog by remember { mutableStateOf<Order?>(null) }
 
-    val filteredOrders = remember(orders, searchQuery, selectedTab) {
+    val filteredOrders = remember(orders, searchQuery, selectedTab, historyFilter) {
         orders.filter { order ->
             val matchQuery = order.shopName.contains(searchQuery, ignoreCase = true) || order.remarks.contains(searchQuery, ignoreCase = true)
             val matchStatus = when (selectedTab) {
@@ -53,14 +57,20 @@ fun OrderHistoryScreen(
                 2 -> order.isPaid  // Paid
                 else -> true      // All
             }
-            matchQuery && matchStatus
+            val matchDate = when (val filter = historyFilter) {
+                is ReportFilter.AllTime -> true
+                is ReportFilter.Today -> viewModel.isToday(order.timestamp)
+                is ReportFilter.SpecificDate -> viewModel.isSameDay(order.timestamp, filter.date)
+                is ReportFilter.SpecificMonth -> viewModel.isSameMonth(order.timestamp, filter.year, filter.month)
+            }
+            matchQuery && matchStatus && matchDate
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF7F9FF))
+            .background(MaterialTheme.colorScheme.background)
             .testTag("orders_screen")
     ) {
         Column(
@@ -117,7 +127,135 @@ fun OrderHistoryScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            var showMonthPicker by remember { mutableStateOf(false) }
+
+            // Trigger standard DatePickerDialog
+            val calendar = Calendar.getInstance()
+            val datePickerDialog = remember {
+                android.app.DatePickerDialog(
+                    context,
+                    { _, year, month, dayOfMonth ->
+                        val selectedCal = Calendar.getInstance()
+                        selectedCal.set(year, month, dayOfMonth)
+                        historyFilter = ReportFilter.SpecificDate(selectedCal.time)
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+                )
+            }
+
+            if (showMonthPicker) {
+                MonthPickerDialog(
+                    onDismissRequest = { showMonthPicker = false },
+                    onMonthSelected = { year, month ->
+                        historyFilter = ReportFilter.SpecificMonth(year, month)
+                        showMonthPicker = false
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // History Filter Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // All Time Chip
+                val isAllSelected = historyFilter == ReportFilter.AllTime
+                FilterChip(
+                    selected = isAllSelected,
+                    onClick = { historyFilter = ReportFilter.AllTime },
+                    label = { Text("সব সময়", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Today Chip
+                val isTodaySelected = historyFilter == ReportFilter.Today
+                FilterChip(
+                    selected = isTodaySelected,
+                    onClick = { historyFilter = ReportFilter.Today },
+                    label = { Text("আজ", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier.weight(0.8f)
+                )
+
+                // Specific Date Chip
+                val isDateSelected = historyFilter is ReportFilter.SpecificDate
+                val dateLabel = if (isDateSelected) {
+                    val date = (historyFilter as ReportFilter.SpecificDate).date
+                    SimpleDateFormat("dd MMM", Locale.getDefault()).format(date)
+                } else {
+                    "তারিখ"
+                }
+                FilterChip(
+                    selected = isDateSelected,
+                    onClick = { datePickerDialog.show() },
+                    label = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.CalendarToday,
+                                contentDescription = null,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(dateLabel, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier.weight(1.1f)
+                )
+
+                // Specific Month Chip
+                val isMonthSelected = historyFilter is ReportFilter.SpecificMonth
+                val monthLabel = if (isMonthSelected) {
+                    val filter = historyFilter as ReportFilter.SpecificMonth
+                    val monthNames = listOf("জানু", "ফেব্রু", "মার্চ", "এপ্রি", "মে", "জুন", "জুলাই", "আগ", "সেপ্টে", "অক্টো", "নভে", "ডিসে")
+                    "${monthNames[filter.month]} '${filter.year.toString().takeLast(2)}"
+                } else {
+                    "মাস"
+                }
+                FilterChip(
+                    selected = isMonthSelected,
+                    onClick = { showMonthPicker = true },
+                    label = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.DateRange,
+                                contentDescription = null,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(monthLabel, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier.weight(1.1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Bills Header
             Text(
@@ -142,7 +280,7 @@ fun OrderHistoryScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ReceiptLong,
+                            imageVector = Icons.Outlined.ReceiptLong,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(64.dp)
@@ -187,7 +325,7 @@ fun OrderHistoryScreen(
                 ) {
                     Text(text = "মেমো / ইনভয়েস", fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     IconButton(onClick = { selectedOrderDetails = null }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Outlined.Close, contentDescription = "Close")
                     }
                 }
             },
@@ -292,7 +430,7 @@ fun OrderHistoryScreen(
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                             ) {
-                                Icon(Icons.Default.Payment, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Outlined.Payment, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("বকেয়া আদায়", fontSize = 12.sp)
                             }
@@ -306,7 +444,7 @@ fun OrderHistoryScreen(
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                         ) {
-                            Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("বিল ডিলিট", fontSize = 12.sp)
                         }

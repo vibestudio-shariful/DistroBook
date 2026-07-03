@@ -1,0 +1,2 @@
+# Treat Gradle wrapper and all other JAR files as binary to prevent corruption during git push/pull
+*.jar binary

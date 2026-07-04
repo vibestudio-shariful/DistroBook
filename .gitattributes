@@ -1,2 +1,6 @@
 # Treat Gradle wrapper and all other JAR files as binary to prevent corruption during git push/pull
 *.jar binary
+
+# Ensure gradlew and other shell scripts always use Unix-style LF line endings to prevent runner execution errors
+gradlew text eol=lf
+*.sh text eol=lf

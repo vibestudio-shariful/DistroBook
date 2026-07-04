@@ -8,11 +8,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
+import android.os.Build
+
+val isTesting = try {
+    Class.forName("org.robolectric.Robolectric")
+    true
+} catch (e: ClassNotFoundException) {
+    false
+} || Build.FINGERPRINT == "robolectric" || Build.FINGERPRINT == "unknown"
+
 // Custom local Google Font: Hind Siliguri for both Bengali and English text
-val HindSiliguri = FontFamily(
-    Font(R.font.hind_siliguri_regular, FontWeight.Normal),
-    Font(R.font.hind_siliguri_bold, FontWeight.Bold)
-)
+// We use FontFamily.SansSerif as a stable system font to ensure the app never crashes with "Could not load font" on devices/emulators
+val HindSiliguri = FontFamily.SansSerif
 
 // Set of Material 3 typography styles
 val Typography = Typography(

@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.R
 import com.example.ui.t
+import com.example.ui.tNonCompose
 import com.example.ui.viewmodel.AppViewModel
 import com.example.data.Order
 import com.example.ui.theme.PaidGreenBg
@@ -248,7 +249,7 @@ fun DashboardScreen(
                     FilterChip(
                         selected = isAllSelected,
                         onClick = { viewModel.setDashboardFilter(ReportFilter.AllTime) },
-                        label = { Text("সব সময়", fontSize = 12.sp) },
+                        label = { Text(t(viewModel, "সব সময়", "All Time"), fontSize = 12.sp) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.primary,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimary
@@ -261,7 +262,7 @@ fun DashboardScreen(
                     FilterChip(
                         selected = isTodaySelected,
                         onClick = { viewModel.setDashboardFilter(ReportFilter.Today) },
-                        label = { Text("আজ", fontSize = 12.sp) },
+                        label = { Text(t(viewModel, "আজ", "Today"), fontSize = 12.sp) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.primary,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimary
@@ -273,9 +274,9 @@ fun DashboardScreen(
                     val isDateSelected = dashboardFilterVal is ReportFilter.SpecificDate
                     val dateLabel = if (isDateSelected) {
                         val date = (dashboardFilterVal as ReportFilter.SpecificDate).date
-                        SimpleDateFormat("dd MMM", Locale.getDefault()).format(date)
+                        SimpleDateFormat("dd MMM", if (isEnglish) Locale.ENGLISH else Locale.getDefault()).format(date)
                     } else {
-                        "তারিখ"
+                        tNonCompose(isEnglish, "তারিখ", "Date")
                     }
                     FilterChip(
                         selected = isDateSelected,
@@ -305,10 +306,12 @@ fun DashboardScreen(
                     val isMonthSelected = dashboardFilterVal is ReportFilter.SpecificMonth
                     val monthLabel = if (isMonthSelected) {
                         val filter = dashboardFilterVal as ReportFilter.SpecificMonth
-                        val monthNames = listOf("জানু", "ফেব্রু", "মার্চ", "এপ্রি", "মে", "জুন", "জুলাই", "আগ", "সেপ্টে", "অক্টো", "নভে", "ডিসে")
-                        "${monthNames[filter.month]} '${filter.year.toString().takeLast(2)}"
+                        val monthNamesBn = listOf("জানু", "ফেব্রু", "মার্চ", "এপ্রি", "মে", "জুন", "জুলাই", "আগ", "সেপ্টে", "অক্টো", "নভে", "ডিসে")
+                        val monthNamesEn = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+                        val monthStr = if (isEnglish) monthNamesEn[filter.month] else monthNamesBn[filter.month]
+                        "$monthStr '${filter.year.toString().takeLast(2)}"
                     } else {
-                        "মাস"
+                        tNonCompose(isEnglish, "মাস", "Month")
                     }
                     FilterChip(
                         selected = isMonthSelected,
@@ -401,7 +404,7 @@ fun DashboardScreen(
                                 .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = "অর্ডার: ${recentOrders.size}টি",
+                                text = t(viewModel, "অর্ডার: ${recentOrders.size}টি", "Orders: ${recentOrders.size}"),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.SemiBold
@@ -414,7 +417,7 @@ fun DashboardScreen(
                                 .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = "দোকান: ${stats.activeShops}টি",
+                                text = t(viewModel, "দোকান: ${stats.activeShops}টি", "Shops: ${stats.activeShops}"),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.SemiBold
@@ -434,7 +437,7 @@ fun DashboardScreen(
             ) {
                 QuickActionButton(
                     icon = Icons.Outlined.PostAdd,
-                    label = "নতুন অর্ডার",
+                    label = t(viewModel, "নতুন অর্ডার", "New Order"),
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     iconBgColor = MaterialTheme.colorScheme.primary,
@@ -444,7 +447,7 @@ fun DashboardScreen(
                 )
                 QuickActionButton(
                     icon = Icons.Outlined.Inventory,
-                    label = "প্রোডাক্ট লিস্ট",
+                    label = t(viewModel, "প্রোডাক্ট লিস্ট", "Products"),
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     iconBgColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -455,7 +458,7 @@ fun DashboardScreen(
                 )
                 QuickActionButton(
                     icon = Icons.Outlined.Storefront,
-                    label = "দোকান ও বকেয়া",
+                    label = t(viewModel, "দোকান ও বকেয়া", "Shops & Dues"),
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     iconBgColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -480,7 +483,7 @@ fun DashboardScreen(
                 val dueBg = if (isDarkMode) Color(0xFF8C1D18).copy(alpha = 0.2f) else Color(0xFFF9DEDC)
                 val dueColor = if (isDarkMode) Color(0xFFF9DEDC) else Color(0xFF410E0B)
                 MetricCard(
-                    title = "মোট বকেয়া (Due Amount)",
+                    title = t(viewModel, "মোট বকেয়া (Due Amount)", "Total Dues"),
                     value = formattedDue,
                     icon = Icons.Outlined.AccountBalanceWallet,
                     containerColor = dueBg,
@@ -494,7 +497,7 @@ fun DashboardScreen(
                     val collectedBg = if (isDarkMode) Color(0xFF1B5E20).copy(alpha = 0.2f) else Color(0xFFD2E8D1)
                     val collectedColor = if (isDarkMode) Color(0xFFC8E6C9) else Color(0xFF0A210B)
                     MetricCard(
-                        title = "মোট আদায়",
+                        title = t(viewModel, "মোট আদায়", "Total Collected"),
                         value = formattedCollected,
                         icon = Icons.Outlined.CheckCircle,
                         containerColor = collectedBg,
@@ -513,8 +516,8 @@ fun DashboardScreen(
                         if (isDarkMode) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF42474E)
                     }
                     MetricCard(
-                        title = "স্টক সতর্কবার্তা",
-                        value = "${stats.lowStockCount} টি প্রোডাক্ট",
+                        title = t(viewModel, "স্টক সতর্কবার্তা", "Stock Warning"),
+                        value = t(viewModel, "${stats.lowStockCount} টি প্রোডাক্ট", "${stats.lowStockCount} Products"),
                         icon = Icons.Outlined.ProductionQuantityLimits,
                         containerColor = warningBg,
                         contentColor = warningColor,
@@ -526,10 +529,10 @@ fun DashboardScreen(
 
         // Recent Orders Header
         val recentBillsTitle = when (dashboardFilterVal) {
-            is ReportFilter.AllTime -> "সাম্প্রতিক বিলিং"
-            is ReportFilter.Today -> "আজকের বিলিং"
-            is ReportFilter.SpecificDate -> "তারিখের বিলিং"
-            is ReportFilter.SpecificMonth -> "মাসের বিলিং"
+            is ReportFilter.AllTime -> if (isEnglish) "Recent Billing" else "সাম্প্রতিক বিলিং"
+            is ReportFilter.Today -> if (isEnglish) "Today's Billing" else "আজকের বিলিং"
+            is ReportFilter.SpecificDate -> if (isEnglish) "Billing of Selected Date" else "তারিখের বিলিং"
+            is ReportFilter.SpecificMonth -> if (isEnglish) "Billing of Selected Month" else "মাসের বিলিং"
         }
         item {
             Row(
@@ -573,7 +576,7 @@ fun DashboardScreen(
                             modifier = Modifier.size(48.dp)
                         )
                         Text(
-                            text = "কোনো বিল এখনো তৈরি করা হয়নি",
+                            text = t(viewModel, "কোনো বিল এখনো তৈরি করা হয়নি", "No bills have been created yet"),
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF72777F)
                         )

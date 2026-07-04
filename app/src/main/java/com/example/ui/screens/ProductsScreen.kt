@@ -26,12 +26,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.Product
 import com.example.ui.viewmodel.AppViewModel
+import com.example.ui.t
+import com.example.ui.tNonCompose
 
 @Composable
 fun ProductsScreen(
     viewModel: AppViewModel
 ) {
     val products by viewModel.products.collectAsState()
+    val isEnglish by viewModel.isEnglish.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     
     var showAddEditDialog by remember { mutableStateOf(false) }
@@ -61,8 +64,8 @@ fun ProductsScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text("প্রোডাক্ট খুঁজুন (Search Products)") },
-                placeholder = { Text("প্রোডাক্টের নাম লিখুন...") },
+                label = { Text(t(viewModel, "প্রোডাক্ট খুঁজুন (Search Products)", "Search Products")) },
+                placeholder = { Text(t(viewModel, "প্রোডাক্টের নাম লিখুন...", "Enter product name...")) },
                 leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -87,7 +90,7 @@ fun ProductsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "মোট প্রোডাক্ট: ${filteredProducts.size} টি",
+                    text = t(viewModel, "মোট প্রোডাক্ট: ${filteredProducts.size} টি", "Total Products: ${filteredProducts.size}"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -115,13 +118,17 @@ fun ProductsScreen(
                             modifier = Modifier.size(64.dp)
                         )
                         Text(
-                            text = if (searchQuery.isNotEmpty()) "কোনো প্রোডাক্ট পাওয়া যায়নি!" else "কোনো প্রোডাক্ট এন্ট্রি করা হয়নি!",
+                            text = if (searchQuery.isNotEmpty()) {
+                                t(viewModel, "কোনো প্রোডাক্ট পাওয়া যায়নি!", "No products found!")
+                            } else {
+                                t(viewModel, "কোনো প্রোডাক্ট এন্ট্রি করা হয়নি!", "No products entered yet!")
+                            },
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.outline
                         )
                         Text(
-                            text = "নতুন প্রোডাক্ট যোগ করতে নিচের '+' বাটনে চাপুন।",
+                            text = t(viewModel, "নতুন প্রোডাক্ট যোগ করতে নিচের '+' বাটনে চাপুন।", "Press the '+' button below to add a new product."),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -136,6 +143,7 @@ fun ProductsScreen(
                     items(filteredProducts, key = { it.id }) { product ->
                         ProductItemRow(
                             product = product,
+                            isEnglish = isEnglish,
                             onEditClick = {
                                 selectedProductForEdit = product
                                 showAddEditDialog = true
@@ -166,7 +174,7 @@ fun ProductsScreen(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
         ) {
-            Icon(Icons.Outlined.Add, contentDescription = "প্রোডাক্ট যোগ করুন")
+            Icon(Icons.Outlined.Add, contentDescription = t(viewModel, "প্রোডাক্ট যোগ করুন", "Add Product"))
         }
     }
 
@@ -174,6 +182,7 @@ fun ProductsScreen(
     if (showAddEditDialog) {
         AddEditProductDialog(
             product = selectedProductForEdit,
+            isEnglish = isEnglish,
             onDismiss = { showAddEditDialog = false },
             onConfirm = { name, price, stock, description ->
                 if (selectedProductForEdit == null) {
@@ -197,8 +206,8 @@ fun ProductsScreen(
     showDeleteConfirmation?.let { product ->
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = null },
-            title = { Text("প্রোডাক্ট মুছে ফেলার শতর্কতা") },
-            text = { Text("'${product.name}' মুছে ফেললে এটি আর পুনরুদ্ধার করা যাবে না। আপনি কি নিশ্চিত?") },
+            title = { Text(t(viewModel, "প্রোডাক্ট মুছে ফেলার সতর্কতা", "Delete Product Warning")) },
+            text = { Text(t(viewModel, "'${product.name}' মুছে ফেললে এটি আর পুনরুদ্ধার করা যাবে না। আপনি কি নিশ্চিত?", "Deleting '${product.name}' is permanent. Are you sure?")) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -207,12 +216,12 @@ fun ProductsScreen(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("মুছে ফেলুন (Delete)")
+                    Text(t(viewModel, "মুছে ফেলুন (Delete)", "Delete"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmation = null }) {
-                    Text("বাতিল (Cancel)")
+                    Text(t(viewModel, "বাতিল (Cancel)", "Cancel"))
                 }
             }
         )
@@ -222,6 +231,7 @@ fun ProductsScreen(
 @Composable
 fun ProductItemRow(
     product: Product,
+    isEnglish: Boolean,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onQuickStockUpdate: (Int) -> Unit
@@ -288,7 +298,7 @@ fun ProductItemRow(
             ) {
                 Column {
                     Text(
-                        text = "মূল্য (Price): ৳${String.format("%,.2f", product.price)}",
+                        text = if (isEnglish) "Price: ৳${String.format("%,.2f", product.price)}" else "মূল্য: ৳${String.format("%,.2f", product.price)}",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -311,7 +321,11 @@ fun ProductItemRow(
                     } else {
                         if (isDark) Color(0xFFC8E6C9) else Color(0xFF0A210B)
                     }
-                    val stockText = if (product.stock == 0) "স্টক শেষ (Out of Stock)" else "স্টক: ${product.stock} টি"
+                    val stockText = if (product.stock == 0) {
+                        if (isEnglish) "Out of Stock" else "স্টক শেষ"
+                    } else {
+                        if (isEnglish) "Stock: ${product.stock} pcs" else "স্টক: ${product.stock} টি"
+                    }
 
                     Box(
                         modifier = Modifier
@@ -341,7 +355,7 @@ fun ProductItemRow(
                         Icon(Icons.Default.Remove, contentDescription = "Deduct Stock", modifier = Modifier.size(16.dp))
                     }
                     Text(
-                        text = "স্টক আপডেট",
+                        text = if (isEnglish) "Update Stock" else "স্টক আপডেট",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -359,6 +373,7 @@ fun ProductItemRow(
 @Composable
 fun AddEditProductDialog(
     product: Product?,
+    isEnglish: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String, Double, Int, String) -> Unit
 ) {
@@ -371,7 +386,15 @@ fun AddEditProductDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (product == null) "নতুন প্রোডাক্ট যোগ করুন" else "প্রোডাক্টের তথ্য এডিট করুন") },
+        title = {
+            Text(
+                if (product == null) {
+                    if (isEnglish) "Add New Product" else "নতুন প্রোডাক্ট যোগ করুন"
+                } else {
+                    if (isEnglish) "Edit Product Details" else "প্রোডাক্টের তথ্য এডিট করুন"
+                }
+            )
+        },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -380,8 +403,8 @@ fun AddEditProductDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("প্রোডাক্টের নাম *") },
-                    placeholder = { Text("যেমন- মিনিকেট চাল ২৫ কেজি") },
+                    label = { Text(if (isEnglish) "Product Name *" else "প্রোডাক্টের নাম *") },
+                    placeholder = { Text(if (isEnglish) "e.g. Miniket Rice 25kg" else "যেমন- মিনিকেট চাল ২৫ কেজি") },
                     modifier = Modifier.fillMaxWidth().testTag("product_name_input"),
                     singleLine = true
                 )
@@ -389,8 +412,8 @@ fun AddEditProductDialog(
                 OutlinedTextField(
                     value = priceStr,
                     onValueChange = { priceStr = it },
-                    label = { Text("বিক্রয় মূল্য (টাকা) *") },
-                    placeholder = { Text("যেমন- ১৩৫০.০০") },
+                    label = { Text(if (isEnglish) "Selling Price (TK) *" else "বিক্রয় মূল্য (টাকা) *") },
+                    placeholder = { Text(if (isEnglish) "e.g. 1350.00" else "যেমন- ১৩৫০.০০") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth().testTag("product_price_input"),
                     singleLine = true
@@ -399,8 +422,8 @@ fun AddEditProductDialog(
                 OutlinedTextField(
                     value = stockStr,
                     onValueChange = { stockStr = it },
-                    label = { Text("বর্তমান স্টক (টি) *") },
-                    placeholder = { Text("যেমন- ৫০") },
+                    label = { Text(if (isEnglish) "Current Stock (pcs) *" else "বর্তমান স্টক (টি) *") },
+                    placeholder = { Text(if (isEnglish) "e.g. 50" else "যেমন- ৫০") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth().testTag("product_stock_input"),
                     singleLine = true
@@ -409,15 +432,15 @@ fun AddEditProductDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("প্রোডাক্টের বিবরণ (ঐচ্ছিক)") },
-                    placeholder = { Text("যেমন- ৫০ কেজির বস্তা") },
+                    label = { Text(if (isEnglish) "Product Description (Optional)" else "প্রোডাক্টের বিবরণ (ঐচ্ছিক)") },
+                    placeholder = { Text(if (isEnglish) "e.g. 50kg bag" else "যেমন- ৫০ কেজির বস্তা") },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3
                 )
 
                 if (isError) {
                     Text(
-                        text = "অনুগ্রহ করে সব তারকা (*) চিহ্নিত ঘরগুলো সঠিকভাবে পূরণ করুন।",
+                        text = if (isEnglish) "Please fill in all marked (*) fields correctly." else "অনুগ্রহ করে সব তারকা (*) চিহ্নিত ঘরগুলো সঠিকভাবে পূরণ করুন।",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -437,12 +460,12 @@ fun AddEditProductDialog(
                 },
                 modifier = Modifier.testTag("product_dialog_confirm")
             ) {
-                Text("সংরক্ষণ করুন (Save)")
+                Text(if (isEnglish) "Save" else "সংরক্ষণ করুন")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("বাতিল (Cancel)")
+                Text(if (isEnglish) "Cancel" else "বাতিল")
             }
         }
     )

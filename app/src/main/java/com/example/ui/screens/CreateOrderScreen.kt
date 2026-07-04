@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.sp
 import com.example.data.OrderItem
 import com.example.data.Product
 import com.example.data.Shop
+import com.example.ui.t
+import com.example.ui.tNonCompose
 import com.example.ui.viewmodel.AppViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,6 +41,7 @@ fun CreateOrderScreen(
     val context = LocalContext.current
     val shops by viewModel.shops.collectAsState()
     val products by viewModel.products.collectAsState()
+    val isEnglish by viewModel.isEnglish.collectAsState()
 
     // Screen State
     var selectedShop by remember { mutableStateOf<Shop?>(null) }
@@ -102,7 +105,7 @@ fun CreateOrderScreen(
             // Section 1: Select Shop
             item {
                 Text(
-                    text = "১. দোকান নির্বাচন করুন * (Select Shop)",
+                    text = if (isEnglish) "1. Select Shop *" else "১. দোকান নির্বাচন করুন *",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -116,7 +119,7 @@ fun CreateOrderScreen(
                 ) {
                     OutlinedTextField(
                         readOnly = true,
-                        value = selectedShop?.name ?: "দোকান সিলেক্ট করুন...",
+                        value = selectedShop?.name ?: (if (isEnglish) "Select shop..." else "দোকান সিলেক্ট করুন..."),
                         onValueChange = {},
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = shopDropdownExpanded) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
@@ -133,7 +136,7 @@ fun CreateOrderScreen(
                     ) {
                         if (shops.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("কোনো দোকান পাওয়া যায়নি! প্রথমে দোকান যোগ করুন।") },
+                                text = { Text(if (isEnglish) "No shops found! Please add a shop first." else "কোনো দোকান পাওয়া যায়নি! প্রথমে দোকান যোগ করুন।") },
                                 onClick = { shopDropdownExpanded = false }
                             )
                         } else {
@@ -161,7 +164,7 @@ fun CreateOrderScreen(
             // Section 2: Choose Products & Quantities
             item {
                 Text(
-                    text = "২. প্রোডাক্ট ও পরিমাণ সিলেক্ট করুন * (Select Products)",
+                    text = if (isEnglish) "2. Select Products & Quantities *" else "২. প্রোডাক্ট ও পরিমাণ সিলেক্ট করুন *",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -173,7 +176,7 @@ fun CreateOrderScreen(
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("প্রোডাক্ট খুঁজুন... (Search Product)") },
+                        placeholder = { Text(if (isEnglish) "Search product..." else "প্রোডাক্ট খুঁজুন...") },
                         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary) },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
@@ -214,7 +217,7 @@ fun CreateOrderScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(Icons.Outlined.Inventory, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(48.dp))
-                            Text("প্রথমে কিছু প্রোডাক্ট এন্ট্রি করে নিন!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text(if (isEnglish) "Please add some products first!" else "প্রথমে কিছু প্রোডাক্ট এন্ট্রি করে নিন!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -235,7 +238,7 @@ fun CreateOrderScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(Icons.Outlined.Search, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(40.dp))
-                            Text("এই নামে কোনো প্রোডাক্ট পাওয়া যায়নি!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(if (isEnglish) "No products found with this name!" else "এই নামে কোনো প্রোডাক্ট পাওয়া যায়নি!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -251,7 +254,8 @@ fun CreateOrderScreen(
                                 if (product.stock > 0) {
                                     selectedQuantities[product.id] = 1
                                 } else {
-                                    Toast.makeText(context, "এই প্রোডাক্টটি স্টকে নেই!", Toast.LENGTH_SHORT).show()
+                                    val stockErr = tNonCompose(isEnglish, "এই প্রোডাক্টটি স্টকে নেই!", "This product is out of stock!")
+                                    Toast.makeText(context, stockErr, Toast.LENGTH_SHORT).show()
                                 }
                             },
                         colors = CardDefaults.cardColors(
@@ -283,7 +287,7 @@ fun CreateOrderScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        text = "স্টক: ${product.stock} টি",
+                                        text = if (isEnglish) "Stock: ${product.stock} pcs" else "স্টক: ${product.stock} টি",
                                         fontSize = 11.sp,
                                         color = if (product.stock == 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
                                         fontWeight = if (product.stock == 0) FontWeight.Bold else FontWeight.Normal
@@ -324,7 +328,8 @@ fun CreateOrderScreen(
                                             if (selectedQty < product.stock) {
                                                 selectedQuantities[product.id] = selectedQty + 1
                                             } else {
-                                                Toast.makeText(context, "স্টকের চেয়ে বেশি দেওয়া সম্ভব নয়!", Toast.LENGTH_SHORT).show()
+                                                val limitErr = tNonCompose(isEnglish, "স্টকের চেয়ে বেশি দেওয়া সম্ভব নয়!", "Cannot exceed available stock!")
+                                                Toast.makeText(context, limitErr, Toast.LENGTH_SHORT).show()
                                             }
                                         },
                                         enabled = product.stock > selectedQty,
@@ -363,7 +368,7 @@ fun CreateOrderScreen(
                                                 }
                                             }
                                         },
-                                        label = { Text("দাম (৳)", fontSize = 11.sp) },
+                                        label = { Text(if (isEnglish) "Price (৳)" else "দাম (৳)", fontSize = 11.sp) },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
@@ -396,7 +401,8 @@ fun CreateOrderScreen(
                                                     if (parsed <= product.stock) {
                                                         selectedQuantities[product.id] = parsed
                                                     } else {
-                                                        Toast.makeText(context, "স্টকের চেয়ে বেশি দেওয়া সম্ভব নয়!", Toast.LENGTH_SHORT).show()
+                                                        val limitErr = tNonCompose(isEnglish, "স্টকের চেয়ে বেশি দেওয়া সম্ভব নয়!", "Cannot exceed available stock!")
+                                                        Toast.makeText(context, limitErr, Toast.LENGTH_SHORT).show()
                                                         selectedQuantities[product.id] = product.stock
                                                         qtyInputVal = product.stock.toString()
                                                     }
@@ -406,7 +412,7 @@ fun CreateOrderScreen(
                                                 }
                                             }
                                         },
-                                        label = { Text("পরিমাণ (টি)", fontSize = 11.sp) },
+                                        label = { Text(if (isEnglish) "Qty (pcs)" else "পরিমাণ (টি)", fontSize = 11.sp) },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
@@ -427,7 +433,7 @@ fun CreateOrderScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Outlined.Delete,
-                                            contentDescription = "Remove Item",
+                                            contentDescription = if (isEnglish) "Remove Item" else "আইটেম বাদ দিন",
                                             tint = MaterialTheme.colorScheme.error
                                         )
                                     }
@@ -460,13 +466,13 @@ fun CreateOrderScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "মোট আইটেম: ${selectedItemsList.size} টি",
+                        text = if (isEnglish) "Total Items: ${selectedItemsList.size}" else "মোট আইটেম: ${selectedItemsList.size} টি",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "মোট বিল: ৳${String.format("%,.2f", totalAmount)}",
+                        text = if (isEnglish) "Total Bill: ৳${String.format("%,.2f", totalAmount)}" else "মোট বিল: ৳${String.format("%,.2f", totalAmount)}",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.primary
@@ -484,8 +490,8 @@ fun CreateOrderScreen(
                     OutlinedTextField(
                         value = paidAmountStr,
                         onValueChange = { paidAmountStr = it },
-                        label = { Text("আদায়কৃত টাকা (Received)") },
-                        placeholder = { Text("৳০.০০") },
+                        label = { Text(if (isEnglish) "Received Amount" else "আদায়কৃত টাকা") },
+                        placeholder = { Text(if (isEnglish) "৳0.00" else "৳০.০০") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier
                             .weight(1.5f)
@@ -504,7 +510,7 @@ fun CreateOrderScreen(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.End
                     ) {
-                        Text("অবশিষ্ট বকেয়া", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
+                        Text(if (isEnglish) "Remaining Due" else "অবশিষ্ট বকেয়া", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
                         Text(
                             text = "৳${String.format("%,.2f", dueAmount)}",
                             fontSize = 16.sp,
@@ -517,8 +523,8 @@ fun CreateOrderScreen(
                 OutlinedTextField(
                     value = remarks,
                     onValueChange = { remarks = it },
-                    label = { Text("অন্যান্য মন্তব্য / নোট (ঐচ্ছিক)") },
-                    placeholder = { Text("যেমন- গাড়ি ভাড়া ৫০ টাকা") },
+                    label = { Text(if (isEnglish) "Remarks / Note (Optional)" else "অন্যান্য মন্তব্য / নোট (ঐচ্ছিক)") },
+                    placeholder = { Text(if (isEnglish) "e.g. Transport cost 50 tk" else "যেমন- গাড়ি ভাড়া ৫০ টাকা") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
                     singleLine = true,
@@ -535,9 +541,11 @@ fun CreateOrderScreen(
                     onClick = {
                         val shop = selectedShop
                         if (shop == null) {
-                            Toast.makeText(context, "দয়া করে প্রথমে দোকান সিলেক্ট করুন!", Toast.LENGTH_LONG).show()
+                            val shopErr = tNonCompose(isEnglish, "দয়া করে প্রথমে দোকান সিলেক্ট করুন!", "Please select a shop first!")
+                            Toast.makeText(context, shopErr, Toast.LENGTH_LONG).show()
                         } else if (selectedItemsList.isEmpty()) {
-                            Toast.makeText(context, "দয়া করে অন্ততঃ ১টি প্রোডাক্ট সিলেক্ট করুন!", Toast.LENGTH_LONG).show()
+                            val prodErr = tNonCompose(isEnglish, "দয়া করে অন্ততঃ ১টি প্রোডাক্ট সিলেক্ট করুন!", "Please select at least 1 product!")
+                            Toast.makeText(context, prodErr, Toast.LENGTH_LONG).show()
                         } else {
                             // Show review before final confirm
                             showReviewDialog = true
@@ -552,7 +560,7 @@ fun CreateOrderScreen(
                 ) {
                     Icon(Icons.Outlined.ReceiptLong, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("অর্ডার রিভিউ ও নিশ্চিত করুন", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text(if (isEnglish) "Review & Confirm Order" else "অর্ডার রিভিউ ও নিশ্চিত করুন", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 }
             }
         }
@@ -568,7 +576,7 @@ fun CreateOrderScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Icon(Icons.Outlined.RateReview, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Text("অর্ডার রিভিউ (Review Order)", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Text(if (isEnglish) "Review Order" else "অর্ডার রিভিউ", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
             },
             text = {
@@ -577,7 +585,7 @@ fun CreateOrderScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "দোকান: ${selectedShop?.name}",
+                        text = if (isEnglish) "Shop: ${selectedShop?.name}" else "দোকান: ${selectedShop?.name}",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 15.sp
@@ -585,7 +593,7 @@ fun CreateOrderScreen(
                     
                     Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     
-                    Text("আইটেম তালিকা (এখান থেকে পরিবর্তন করতে পারবেন):", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Text(if (isEnglish) "Selected Items (You can adjust quantities here):" else "আইটেম তালিকা (এখান থেকে পরিবর্তন করতে পারবেন):", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
                     
                     // Display list of selected items with quick controllers
                     LazyColumn(
@@ -610,8 +618,8 @@ fun CreateOrderScreen(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(item.productName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                                        Text("৳${String.format("%,.2f", item.price)} x ${item.quantity} টি", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text("মোট: ৳${String.format("%,.2f", item.totalLinePrice)}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                                        Text("৳${String.format("%,.2f", item.price)} x ${if (isEnglish) "${item.quantity} pcs" else "${item.quantity} টি"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text((if (isEnglish) "Total: ৳" else "মোট: ৳") + String.format("%,.2f", item.totalLinePrice), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                                     }
                                     
                                     // Quick controllers inside review dialog
@@ -646,7 +654,8 @@ fun CreateOrderScreen(
                                                 if (product != null && item.quantity < product.stock) {
                                                     selectedQuantities[item.productId] = item.quantity + 1
                                                 } else {
-                                                    Toast.makeText(context, "স্টকের চেয়ে বেশি নেই!", Toast.LENGTH_SHORT).show()
+                                                    val maxStockErr = tNonCompose(isEnglish, "স্টকের চেয়ে বেশি নেই!", "Out of stock!")
+                                                    Toast.makeText(context, maxStockErr, Toast.LENGTH_SHORT).show()
                                                 }
                                             },
                                             modifier = Modifier.size(32.dp)
@@ -676,21 +685,21 @@ fun CreateOrderScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("মোট বিল:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(if (isEnglish) "Total Bill:" else "মোট বিল:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Text("৳${String.format("%,.2f", totalAmount)}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("আদায়কৃত টাকা:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (isEnglish) "Received Amount:" else "আদায়কৃত টাকা:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("৳${String.format("%,.2f", paidAmount)}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("অবশিষ্ট বকেয়া:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(if (isEnglish) "Remaining Due:" else "অবশিষ্ট বকেয়া:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Text(
                             text = "৳${String.format("%,.2f", dueAmount)}",
                             fontWeight = FontWeight.Bold,
@@ -712,23 +721,25 @@ fun CreateOrderScreen(
                                 paidAmount = paidAmount,
                                 remarks = remarks
                             )
-                            Toast.makeText(context, "বিল সফলভাবে সংরক্ষণ ও স্টক আপডেট করা হয়েছে!", Toast.LENGTH_LONG).show()
+                            val orderSuccessMsg = tNonCompose(isEnglish, "বিল সফলভাবে সংরক্ষণ ও স্টক আপডেট করা হয়েছে!", "Order placed successfully and stock updated!")
+                            Toast.makeText(context, orderSuccessMsg, Toast.LENGTH_LONG).show()
                             showReviewDialog = false
                             onOrderPlacedSuccessfully()
                         } else {
-                            Toast.makeText(context, "কোনো আইটেম সিলেক্ট করা নেই!", Toast.LENGTH_SHORT).show()
+                            val emptyItemsMsg = tNonCompose(isEnglish, "কোনো আইটেম সিলেক্ট করা নেই!", "No items selected!")
+                            Toast.makeText(context, emptyItemsMsg, Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("অর্ডার নিশ্চিত করুন")
+                    Text(if (isEnglish) "Confirm Order" else "অর্ডার নিশ্চিত করুন")
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showReviewDialog = false }
                 ) {
-                    Text("সম্পাদনা করুন")
+                    Text(if (isEnglish) "Edit" else "সম্পাদনা করুন")
                 }
             }
         )

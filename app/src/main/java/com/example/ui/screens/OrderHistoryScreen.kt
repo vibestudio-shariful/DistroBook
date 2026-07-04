@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.sp
 import com.example.data.Order
 import com.example.ui.viewmodel.AppViewModel
 import com.example.ui.viewmodel.ReportFilter
+import com.example.ui.t
+import com.example.ui.tNonCompose
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -40,6 +42,7 @@ fun OrderHistoryScreen(
 ) {
     val context = LocalContext.current
     val orders by viewModel.orders.collectAsState()
+    val isEnglish by viewModel.isEnglish.collectAsState()
     
     var searchQuery by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf(0) } // 0 = All, 1 = Due, 2 = Paid
@@ -82,8 +85,8 @@ fun OrderHistoryScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text("ক্রেতা বা বিল খুঁজুন (Search Bills)") },
-                placeholder = { Text("দোকানের নাম বা বিলের মন্তব্য...") },
+                label = { Text(t(viewModel, "ক্রেতা বা বিল খুঁজুন (Search Bills)", "Search Bills")) },
+                placeholder = { Text(t(viewModel, "দোকানের নাম বা বিলের মন্তব্য...", "Shop name or bill remarks...")) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -110,20 +113,25 @@ fun OrderHistoryScreen(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("সব বিল", fontWeight = FontWeight.Bold) }
+                    text = { Text(if (isEnglish) "All Bills" else "সব বিল", fontWeight = FontWeight.Bold) }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     text = {
                         val duesCount = orders.count { !it.isPaid }
-                        Text(if (duesCount > 0) "বকেয়া ($duesCount)" else "বকেয়া", fontWeight = FontWeight.Bold)
+                        val duesLabel = if (isEnglish) {
+                            if (duesCount > 0) "Due ($duesCount)" else "Due"
+                        } else {
+                            if (duesCount > 0) "বকেয়া ($duesCount)" else "বকেয়া"
+                        }
+                        Text(duesLabel, fontWeight = FontWeight.Bold)
                     }
                 )
                 Tab(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    text = { Text("পরিশোধিত", fontWeight = FontWeight.Bold) }
+                    text = { Text(if (isEnglish) "Paid" else "পরিশোধিত", fontWeight = FontWeight.Bold) }
                 )
             }
 
@@ -168,12 +176,12 @@ fun OrderHistoryScreen(
                 FilterChip(
                     selected = isAllSelected,
                     onClick = { historyFilter = ReportFilter.AllTime },
-                    label = { Text("সব সময়", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    label = { Text(if (isEnglish) "All Time" else "সব সময়", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                     ),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1.1f)
                 )
 
                 // Today Chip
@@ -181,12 +189,12 @@ fun OrderHistoryScreen(
                 FilterChip(
                     selected = isTodaySelected,
                     onClick = { historyFilter = ReportFilter.Today },
-                    label = { Text("আজ", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    label = { Text(if (isEnglish) "Today" else "আজ", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                     ),
-                    modifier = Modifier.weight(0.8f)
+                    modifier = Modifier.weight(0.9f)
                 )
 
                 // Specific Date Chip
@@ -195,7 +203,7 @@ fun OrderHistoryScreen(
                     val date = (historyFilter as ReportFilter.SpecificDate).date
                     SimpleDateFormat("dd MMM", Locale.getDefault()).format(date)
                 } else {
-                    "তারিখ"
+                    if (isEnglish) "Date" else "তারিখ"
                 }
                 FilterChip(
                     selected = isDateSelected,
@@ -225,10 +233,15 @@ fun OrderHistoryScreen(
                 val isMonthSelected = historyFilter is ReportFilter.SpecificMonth
                 val monthLabel = if (isMonthSelected) {
                     val filter = historyFilter as ReportFilter.SpecificMonth
-                    val monthNames = listOf("জানু", "ফেব্রু", "মার্চ", "এপ্রি", "মে", "জুন", "জুলাই", "আগ", "সেপ্টে", "অক্টো", "নভে", "ডিসে")
-                    "${monthNames[filter.month]} '${filter.year.toString().takeLast(2)}"
+                    if (isEnglish) {
+                        val monthNamesEn = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+                        "${monthNamesEn[filter.month]} '${filter.year.toString().takeLast(2)}"
+                    } else {
+                        val monthNames = listOf("জানু", "ফেব্রু", "মার্চ", "এপ্রি", "মে", "জুন", "জুলাই", "আগ", "সেপ্টে", "অক্টো", "নভে", "ডিসে")
+                        "${monthNames[filter.month]} '${filter.year.toString().takeLast(2)}"
+                    }
                 } else {
-                    "মাস"
+                    if (isEnglish) "Month" else "মাস"
                 }
                 FilterChip(
                     selected = isMonthSelected,
@@ -259,7 +272,7 @@ fun OrderHistoryScreen(
 
             // Bills Header
             Text(
-                text = "মোট বিলের সংখ্যা: ${filteredOrders.size} টি",
+                text = if (isEnglish) "Total Bills: ${filteredOrders.size}" else "মোট বিলের সংখ্যা: ${filteredOrders.size} টি",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -286,7 +299,7 @@ fun OrderHistoryScreen(
                             modifier = Modifier.size(64.dp)
                         )
                         Text(
-                            text = "কোনো বিল পাওয়া যায়নি!",
+                            text = if (isEnglish) "No bills found!" else "কোনো বিল পাওয়া যায়নি!",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.outline
@@ -323,9 +336,9 @@ fun OrderHistoryScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "মেমো / ইনভয়েস", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text(text = if (isEnglish) "Memo / Invoice" else "মেমো / ইনভয়েস", fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     IconButton(onClick = { selectedOrderDetails = null }) {
-                        Icon(Icons.Outlined.Close, contentDescription = "Close")
+                        Icon(Icons.Outlined.Close, contentDescription = if (isEnglish) "Close" else "বন্ধ করুন")
                     }
                 }
             },
@@ -346,11 +359,11 @@ fun OrderHistoryScreen(
                             modifier = Modifier.padding(12.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text(text = "মেমো নং: #${order.id}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Text(text = "ক্রেতা: ${order.shopName}", fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                            Text(text = "তারিখ: $dateStr", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
+                            Text(text = if (isEnglish) "Memo No: #${order.id}" else "মেমো নং: #${order.id}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(text = if (isEnglish) "Shop: ${order.shopName}" else "ক্রেতা: ${order.shopName}", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text(text = if (isEnglish) "Date: $dateStr" else "তারিখ: $dateStr", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
                             if (order.remarks.isNotBlank()) {
-                                Text(text = "নোট: ${order.remarks}", fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                Text(text = if (isEnglish) "Note: ${order.remarks}" else "নোট: ${order.remarks}", fontSize = 11.sp, fontWeight = FontWeight.Medium)
                             }
                         }
                     }
@@ -363,10 +376,10 @@ fun OrderHistoryScreen(
                             .padding(vertical = 6.dp, horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = "প্রোডাক্টের নাম", modifier = Modifier.weight(1.8f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        Text(text = "মূল্য", modifier = Modifier.weight(0.8f), fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        Text(text = "পরিমাণ", modifier = Modifier.weight(0.8f), fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        Text(text = "মোট", modifier = Modifier.weight(1f), fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(text = if (isEnglish) "Product Name" else "প্রোডাক্টের নাম", modifier = Modifier.weight(1.8f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(text = if (isEnglish) "Price" else "মূল্য", modifier = Modifier.weight(0.8f), fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(text = if (isEnglish) "Qty" else "পরিমাণ", modifier = Modifier.weight(0.8f), fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(text = if (isEnglish) "Total" else "মোট", modifier = Modifier.weight(1f), fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     }
 
                     // Itemized Items Rows
@@ -386,7 +399,7 @@ fun OrderHistoryScreen(
                             ) {
                                 Text(text = item.productName, modifier = Modifier.weight(1.8f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
                                 Text(text = "৳${String.format("%,.0f", item.price)}", modifier = Modifier.weight(0.8f), fontSize = 12.sp, textAlign = TextAlign.End)
-                                Text(text = "${item.quantity} টি", modifier = Modifier.weight(0.8f), fontSize = 12.sp, textAlign = TextAlign.End)
+                                Text(text = if (isEnglish) "${item.quantity} pcs" else "${item.quantity} টি", modifier = Modifier.weight(0.8f), fontSize = 12.sp, textAlign = TextAlign.End)
                                 Text(text = "৳${String.format("%,.0f", item.totalLinePrice)}", modifier = Modifier.weight(1f), fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
                             }
                             Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
@@ -399,11 +412,11 @@ fun OrderHistoryScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(text = "মোট বিল (Total Bill):", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text(text = if (isEnglish) "Total Bill:" else "মোট বিল:", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             Text(text = "৳${String.format("%,.2f", order.totalAmount)}", fontSize = 13.sp, fontWeight = FontWeight.Black)
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(text = "টাকা আদায় (Collected):", fontSize = 13.sp, color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
+                            Text(text = if (isEnglish) "Collected:" else "টাকা আদায়:", fontSize = 13.sp, color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
                             Text(text = "৳${String.format("%,.2f", order.paidAmount)}", fontSize = 13.sp, color = Color(0xFF2E7D32), fontWeight = FontWeight.Black)
                         }
                         
@@ -412,7 +425,7 @@ fun OrderHistoryScreen(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             val isDue = order.dueAmount > 0
                             val col = if (isDue) MaterialTheme.colorScheme.error else Color(0xFF2E7D32)
-                            Text(text = "বকেয়া (Outstanding Due):", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = col)
+                            Text(text = if (isEnglish) "Outstanding Due:" else "বকেয়া:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = col)
                             Text(text = "৳${String.format("%,.2f", order.dueAmount)}", fontSize = 15.sp, fontWeight = FontWeight.Black, color = col)
                         }
                     }
@@ -432,7 +445,7 @@ fun OrderHistoryScreen(
                             ) {
                                 Icon(Icons.Outlined.Payment, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("বকেয়া আদায়", fontSize = 12.sp)
+                                Text(if (isEnglish) "Collect Due" else "বকেয়া আদায়", fontSize = 12.sp)
                             }
                         }
                         
@@ -446,14 +459,14 @@ fun OrderHistoryScreen(
                         ) {
                             Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("বিল ডিলিট", fontSize = 12.sp)
+                            Text(if (isEnglish) "Delete Bill" else "বিল ডিলিট", fontSize = 12.sp)
                         }
                     }
                 }
             },
             confirmButton = {
                 Button(onClick = { selectedOrderDetails = null }) {
-                    Text("মেমো বন্ধ করুন")
+                    Text(if (isEnglish) "Close Memo" else "মেমো বন্ধ করুন")
                 }
             }
         )
@@ -466,17 +479,17 @@ fun OrderHistoryScreen(
 
         AlertDialog(
             onDismissRequest = { showPaymentUpdateDialog = null },
-            title = { Text("বকেয়া টাকা আদায় আপডেট করুন") },
+            title = { Text(if (isEnglish) "Collect Outstanding Due" else "বকেয়া টাকা আদায় আপডেট করুন") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(text = "দোকানের নাম: ${order.shopName}", fontWeight = FontWeight.Bold)
-                    Text(text = "বিলের মোট বকেয়া: ৳${String.format("%,.2f", order.dueAmount)}", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    Text(text = if (isEnglish) "Shop Name: ${order.shopName}" else "দোকানের নাম: ${order.shopName}", fontWeight = FontWeight.Bold)
+                    Text(text = if (isEnglish) "Outstanding Due: ৳${String.format("%,.2f", order.dueAmount)}" else "বিলের মোট বকেয়া: ৳${String.format("%,.2f", order.dueAmount)}", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                     
                     OutlinedTextField(
                         value = collectStr,
                         onValueChange = { collectStr = it },
-                        label = { Text("আদায়কৃত টাকার পরিমাণ *") },
-                        placeholder = { Text("যেমন- ৫০০.০০") },
+                        label = { Text(if (isEnglish) "Collected Amount *" else "আদায়কৃত টাকার পরিমাণ *") },
+                        placeholder = { Text(if (isEnglish) "e.g. 500.00" else "যেমন- ৫০০.০০") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth().testTag("due_collect_input"),
                         singleLine = true
@@ -484,7 +497,7 @@ fun OrderHistoryScreen(
 
                     if (isError) {
                         Text(
-                            text = "অনুগ্রহ করে বকেয়া টাকা বা তার চেয়ে কম পরিমাণ সঠিক সংখ্যা লিখুন।",
+                            text = if (isEnglish) "Please enter a valid amount less than or equal to outstanding due." else "অনুগ্রহ করে বকেয়া টাকা বা তার চেয়ে কম পরিমাণ সঠিক সংখ্যা লিখুন।",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -499,19 +512,20 @@ fun OrderHistoryScreen(
                             isError = true
                         } else {
                             viewModel.updateOrderPayment(order, amt)
-                            Toast.makeText(context, "বকেয়া আদায় আপডেট সম্পন্ন হয়েছে!", Toast.LENGTH_SHORT).show()
+                            val msg = tNonCompose(isEnglish, "বকেয়া আদায় আপডেট সম্পন্ন হয়েছে!", "Due collection updated successfully!")
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                             showPaymentUpdateDialog = null
                             selectedOrderDetails = null // close receipt so it refreshes or let it close
                         }
                     },
                     modifier = Modifier.testTag("collect_confirm")
                 ) {
-                    Text("আদায় নিশ্চিত করুন")
+                    Text(if (isEnglish) "Confirm Collection" else "আদায় নিশ্চিত করুন")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPaymentUpdateDialog = null }) {
-                    Text("বাতিল")
+                    Text(if (isEnglish) "Cancel" else "বাতিল")
                 }
             }
         )
@@ -521,24 +535,25 @@ fun OrderHistoryScreen(
     showDeleteConfirmation?.let { order ->
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = null },
-            title = { Text("বিল মুছে ফেলার সতর্কতা") },
-            text = { Text("মেমো নং #${order.id} চিরতরে ডিলিট করতে চান? এটি আর দেখা যাবে না।") },
+            title = { Text(t(viewModel, "বিল মুছে ফেলার সতর্কতা", "Delete Bill Warning")) },
+            text = { Text(t(viewModel, "মেমো নং #${order.id} চিরতরে ডিলিট করতে চান? এটি আর দেখা যাবে না।", "Do you want to permanently delete Memo No #${order.id}? This action cannot be undone.")) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         viewModel.deleteOrder(order)
                         showDeleteConfirmation = null
                         selectedOrderDetails = null // close invoice view too
-                        Toast.makeText(context, "বিল মুছে ফেলা হয়েছে!", Toast.LENGTH_SHORT).show()
+                        val msg = tNonCompose(isEnglish, "বিল মুছে ফেলা হয়েছে!", "Bill deleted successfully!")
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("মুছে ফেলুন")
+                    Text(t(viewModel, "মুছে ফেলুন", "Delete"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmation = null }) {
-                    Text("বাতিল")
+                    Text(t(viewModel, "বাতিল", "Cancel"))
                 }
             }
         )

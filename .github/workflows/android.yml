@@ -5,7 +5,7 @@ on:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+  workflow_dispatch: # GitHub UI থেকে ম্যানুয়ালি রান করার জন্য
 
 jobs:
   build:
@@ -21,7 +21,7 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
-        cache: gradle
+        cache: gradle # এর ফলে পরবর্তী বিল্ডগুলো অনেক দ্রুত হবে
 
     - name: Set up Environment Variables
       run: |
@@ -42,6 +42,12 @@ jobs:
           keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -storetype PKCS12
         fi
 
+    # এই নতুন স্টেপটি আপনার করাপ্ট হওয়া gradle-wrapper.jar ফাইলটিকে অটোমেটিক ডাউনলোড করে ফিক্স করবে
+    - name: Download Fresh Gradle Wrapper JAR
+      run: |
+        mkdir -p gradle/wrapper
+        curl -Lo gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar
+
     - name: Grant Execute Permission for Gradle Wrapper
       run: chmod +x gradlew
 
@@ -52,4 +58,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: distro-book-debug-apk
-        path: app/build/outputs/apk/debug/app-debug.apk
+        # এখানে ওয়াইল্ডকার্ড (*) ব্যবহার করায় APK এর নাম সামান্য পরিবর্তন হলেও বিল্ড ফেইল হবে না
+        path: "**/build/outputs/apk/debug/*.apk"
+        if-no-files-found: error

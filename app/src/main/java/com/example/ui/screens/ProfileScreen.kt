@@ -115,6 +115,30 @@ fun ProfileScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    // Language switch button
+                    IconButton(
+                        onClick = { viewModel.setLanguage(!isEnglish) },
+                        modifier = Modifier.testTag("profile_action_toggle_language")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Translate,
+                            contentDescription = if (isEnglish) "Switch to Bangla" else "ইংরেজিতে পরিবর্তন করুন",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                    // Theme toggle button
+                    IconButton(
+                        onClick = { viewModel.setDarkMode(!isDarkMode) },
+                        modifier = Modifier.testTag("profile_action_toggle_theme")
+                    ) {
+                        Icon(
+                            imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                            contentDescription = if (isEnglish) "Toggle Theme" else "থিম পরিবর্তন করুন",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,

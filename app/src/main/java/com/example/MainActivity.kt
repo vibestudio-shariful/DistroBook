@@ -53,12 +53,13 @@ fun MainAppScreen() {
   val navController = rememberNavController()
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
+  val isEnglish by viewModel.isEnglish.collectAsState()
+  val isDarkMode by viewModel.isDarkMode.collectAsState()
 
   Scaffold(
     modifier = Modifier.fillMaxSize(),
     topBar = {
       if (currentRoute != "profile") {
-        val isEnglish by viewModel.isEnglish.collectAsState()
         TopAppBar(
           title = {
             Text(
@@ -73,6 +74,30 @@ fun MainAppScreen() {
               fontWeight = FontWeight.Bold,
               fontSize = 20.sp
             )
+          },
+          actions = {
+            // Language switch button
+            IconButton(
+              onClick = { viewModel.setLanguage(!isEnglish) },
+              modifier = Modifier.testTag("action_toggle_language")
+            ) {
+              Icon(
+                imageVector = Icons.Default.Translate,
+                contentDescription = if (isEnglish) "Switch to Bangla" else "ইংরেজিতে পরিবর্তন করুন",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+              )
+            }
+            // Theme toggle button
+            IconButton(
+              onClick = { viewModel.setDarkMode(!isDarkMode) },
+              modifier = Modifier.testTag("action_toggle_theme")
+            ) {
+              Icon(
+                imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                contentDescription = if (isEnglish) "Toggle Theme" else "থিম পরিবর্তন করুন",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+              )
+            }
           },
           colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,

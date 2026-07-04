@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.R
+import com.example.ui.t
 import com.example.ui.viewmodel.AppViewModel
 import com.example.data.Order
 import com.example.ui.theme.PaidGreenBg
@@ -55,18 +56,21 @@ fun DashboardScreen(
     val businessNameVal by viewModel.businessName.collectAsState()
     val dashboardFilterVal by viewModel.dashboardFilter.collectAsState()
     
+    val isEnglish by viewModel.isEnglish.collectAsState()
+    
     val salesCardTitle = when (dashboardFilterVal) {
-        is ReportFilter.AllTime -> "সব সময়ের মোট বিক্রি"
-        is ReportFilter.Today -> "আজকের মোট বিক্রি"
+        is ReportFilter.AllTime -> if (isEnglish) "All-time Total Sales" else "সব সময়ের মোট বিক্রি"
+        is ReportFilter.Today -> if (isEnglish) "Today's Total Sales" else "আজকের মোট বিক্রি"
         is ReportFilter.SpecificDate -> {
             val date = (dashboardFilterVal as ReportFilter.SpecificDate).date
-            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-            "${sdf.format(date)}-এর মোট বিক্রি"
+            val sdf = SimpleDateFormat("dd MMM yyyy", if (isEnglish) Locale.ENGLISH else Locale.getDefault())
+            if (isEnglish) "Total Sales of ${sdf.format(date)}" else "${sdf.format(date)}-এর মোট বিক্রি"
         }
         is ReportFilter.SpecificMonth -> {
             val filter = dashboardFilterVal as ReportFilter.SpecificMonth
-            val monthNames = listOf("জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর")
-            "${monthNames[filter.month]} ${filter.year}-এর মোট বিক্রি"
+            val monthNamesBn = listOf("জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর")
+            val monthNamesEn = listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+            if (isEnglish) "Total Sales of ${monthNamesEn[filter.month]} ${filter.year}" else "${monthNamesBn[filter.month]} ${filter.year}-এর মোট বিক্রি"
         }
     }
 
@@ -120,7 +124,7 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = "সরবরাহকারী ড্যাশবোর্ড",
+                            text = t(viewModel, "সরবরাহকারী ড্যাশবোর্ড", "Supplier Dashboard"),
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
@@ -216,7 +220,7 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "রিপোর্ট ফিল্টার (Filter Reports)",
+                        text = t(viewModel, "রিপোর্ট ফিল্টার (Filter Reports)", "Report Filter"),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -224,7 +228,7 @@ fun DashboardScreen(
                     
                     if (dashboardFilterVal != ReportFilter.AllTime) {
                         Text(
-                            text = "ফিল্টার রিসেট",
+                            text = t(viewModel, "ফিল্টার রিসেট", "Reset Filter"),
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,

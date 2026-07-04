@@ -5,7 +5,7 @@ on:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
-  workflow_dispatch: # GitHub UI থেকে ম্যানুয়ালি রান করার জন্য
+  workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:
   build:
@@ -42,13 +42,6 @@ jobs:
           keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -storetype PKCS12
         fi
 
-    # এখানে 'gradle-wrapper-validation: false' যুক্ত করা হয়েছে যেন নষ্ট জার ফাইলের কারণে বিল্ড আটকে না যায়
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        gradle-version: wrapper
-        gradle-wrapper-validation: false 
-
     - name: Grant Execute Permission for Gradle Wrapper
       run: chmod +x gradlew
 
@@ -59,5 +52,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: distro-book-debug-apk
-        path: "**/build/outputs/apk/debug/*.apk"
-        if-no-files-found: error
+        path: app/build/outputs/apk/debug/app-debug.apk

@@ -58,16 +58,17 @@ fun MainAppScreen() {
     modifier = Modifier.fillMaxSize(),
     topBar = {
       if (currentRoute != "profile") {
+        val isEnglish by viewModel.isEnglish.collectAsState()
         TopAppBar(
           title = {
             Text(
               text = when (currentRoute) {
-                "dashboard" -> "ড্যাশবোর্ড (Dashboard)"
-                "create_order" -> "নতুন মেমো / বিল তৈরি"
-                "history" -> "মেমো / বিলের তালিকা"
-                "products" -> "প্রোডাক্ট ও স্টক"
-                "shops" -> "দোকান ও বকেয়া"
-                else -> "দোকান সাপ্লাই"
+                "dashboard" -> if (isEnglish) "Dashboard" else "ড্যাশবোর্ড"
+                "create_order" -> if (isEnglish) "Create Bill" else "নতুন মেমো / বিল তৈরি"
+                "history" -> if (isEnglish) "Memo History" else "মেমো / বিলের তালিকা"
+                "products" -> if (isEnglish) "Products & Stock" else "প্রোডাক্ট ও স্টক"
+                "shops" -> if (isEnglish) "Shops & Dues" else "দোকান ও বকেয়া"
+                else -> if (isEnglish) "Shop Supply" else "দোকান সাপ্লাই"
               },
               fontWeight = FontWeight.Bold,
               fontSize = 20.sp
@@ -86,12 +87,13 @@ fun MainAppScreen() {
         tonalElevation = 8.dp,
         modifier = Modifier.testTag("bottom_nav")
       ) {
+        val isEnglish by viewModel.isEnglish.collectAsState()
         val items = listOf(
-          NavigationItem("dashboard", "হোম", Icons.Default.Dashboard, Icons.Outlined.Dashboard),
-          NavigationItem("create_order", "বিল তৈরি", Icons.Default.PostAdd, Icons.Outlined.PostAdd),
-          NavigationItem("history", "ইতিহাস", Icons.Default.ReceiptLong, Icons.Outlined.ReceiptLong),
-          NavigationItem("products", "প্রোডাক্ট", Icons.Default.Inventory, Icons.Outlined.Inventory),
-          NavigationItem("shops", "দোকান", Icons.Default.Storefront, Icons.Outlined.Storefront)
+          NavigationItem("dashboard", if (isEnglish) "Home" else "হোম", Icons.Default.Dashboard, Icons.Outlined.Dashboard),
+          NavigationItem("create_order", if (isEnglish) "Create Bill" else "বিল তৈরি", Icons.Default.PostAdd, Icons.Outlined.PostAdd),
+          NavigationItem("history", if (isEnglish) "History" else "ইতিহাস", Icons.Default.ReceiptLong, Icons.Outlined.ReceiptLong),
+          NavigationItem("products", if (isEnglish) "Products" else "প্রোডাক্ট", Icons.Default.Inventory, Icons.Outlined.Inventory),
+          NavigationItem("shops", if (isEnglish) "Shops" else "দোকান", Icons.Default.Storefront, Icons.Outlined.Storefront)
         )
 
         items.forEach { item ->

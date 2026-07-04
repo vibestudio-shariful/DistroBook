@@ -57,6 +57,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         isDarkMode.value = enabled
     }
 
+    // Language state: true for English, false for Bangla (default)
+    val isEnglish = MutableStateFlow(sharedPrefs.getBoolean("is_english", false))
+
+    fun setLanguage(enabled: Boolean) {
+        sharedPrefs.edit().putBoolean("is_english", enabled).apply()
+        isEnglish.value = enabled
+    }
+
     // Save Avatar Photo to Private Storage
     fun saveUserAvatar(context: Context, uri: Uri) {
         viewModelScope.launch {

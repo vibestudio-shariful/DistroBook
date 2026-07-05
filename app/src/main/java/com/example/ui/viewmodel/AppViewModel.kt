@@ -38,7 +38,9 @@ data class BackupPayload(
     val businessName: String,
     val userPhone: String,
     val userEmail: String,
-    val userAddress: String
+    val userAddress: String,
+    val userAvatarBase64: String? = null,
+    val shopImagesBase64: Map<String, String>? = null
 )
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
@@ -58,6 +60,46 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val userEmail = MutableStateFlow(sharedPrefs.getString("user_email", "ইমেইল বা সোশ্যাল প্রোফাইল") ?: "ইমেইল বা সোশ্যাল প্রোফাইল")
     val userAddress = MutableStateFlow(sharedPrefs.getString("user_address", "আপনার ঠিকানা") ?: "আপনার ঠিকানা")
     val userAvatarPath = MutableStateFlow(sharedPrefs.getString("user_avatar_path", null))
+
+    // Google Drive Integration state
+    val googleAccountEmail = MutableStateFlow<String?>(sharedPrefs.getString("google_account_email", null))
+    val googleAccountDisplayName = MutableStateFlow<String?>(sharedPrefs.getString("google_account_display_name", null))
+    val googleDriveBackups = MutableStateFlow<List<com.example.utils.DriveBackupFile>>(emptyList())
+    val isDriveLoading = MutableStateFlow(false)
+
+    fun setGoogleAccount(email: String?, displayName: String?) {
+        sharedPrefs.edit().apply {
+            putString("google_account_email", email)
+            putString("google_account_display_name", displayName)
+        }.apply()
+        googleAccountEmail.value = email
+        googleAccountDisplayName.value = displayName
+        if (email != null) {
+            loadGoogleDriveBackups()
+        } else {
+            googleDriveBackups.value = emptyList()
+        }
+    }
+
+    fun loadGoogleDriveBackups() {
+        val email = googleAccountEmail.value ?: return
+        viewModelScope.launch {
+            isDriveLoading.value = true
+            try {
+                // If this is called in background, it might fail if UserRecoverableAuthException is thrown.
+                // We'll wrap it carefully and catch exceptions.
+                val token = com.example.utils.GoogleDriveHelper.getAccessToken(getApplication(), email)
+                if (token != null) {
+                    val backups = com.example.utils.GoogleDriveHelper.listBackups(token)
+                    googleDriveBackups.value = backups
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isDriveLoading.value = false
+            }
+        }
+    }
 
     // Theme state
     val isDarkMode = MutableStateFlow(sharedPrefs.getBoolean("is_dark_mode", false))
@@ -173,6 +215,70 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         userAvatarPath.value = null
     }
 
+    private fun getPhotosBase64(shopsList: List<Shop>): Pair<String?, Map<String, String>> {
+        var userAvatarBase64: String? = null
+        userAvatarPath.value?.let { path ->
+            val file = File(path)
+            if (file.exists()) {
+                try {
+                    val bytes = file.readBytes()
+                    userAvatarBase64 = android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        val shopImagesBase = mutableMapOf<String, String>()
+        shopsList.forEach { shop ->
+            shop.imageUri?.let { uriPath ->
+                val file = File(uriPath)
+                if (file.exists()) {
+                    try {
+                        val bytes = file.readBytes()
+                        val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+                        shopImagesBase[file.name] = base64
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+        return Pair(userAvatarBase64, shopImagesBase)
+    }
+
+    private fun restorePhotos(userAvatarBase64Str: String?, shopImagesBase64Map: Map<String, String>?): Map<String, String> {
+        val restoredShopImagesMap = mutableMapOf<String, String>()
+        
+        // 1. Restore User Avatar
+        userAvatarBase64Str?.let { base64 ->
+            try {
+                val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                val avatarFile = File(mediaDir, "user_avatar_${System.currentTimeMillis()}.jpg")
+                avatarFile.writeBytes(bytes)
+                val path = avatarFile.absolutePath
+                sharedPrefs.edit().putString("user_avatar_path", path).apply()
+                userAvatarPath.value = path
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // 2. Restore Shop Images
+        shopImagesBase64Map?.forEach { (fileName, base64) ->
+            try {
+                val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                val restoredFile = File(mediaDir, fileName)
+                restoredFile.writeBytes(bytes)
+                restoredShopImagesMap[fileName] = restoredFile.absolutePath
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        
+        return restoredShopImagesMap
+    }
+
     // Export Data to JSON Uri (Storage Access Framework)
     fun exportBackupToUri(context: Context, uri: Uri, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
@@ -180,6 +286,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val prodList = products.value
                 val shopList = shops.value
                 val orderList = orders.value
+
+                val (userAvatarBase64, shopImagesBase) = getPhotosBase64(shopList)
 
                 val payload = BackupPayload(
                     products = prodList,
@@ -189,7 +297,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     businessName = businessName.value,
                     userPhone = userPhone.value,
                     userEmail = userEmail.value,
-                    userAddress = userAddress.value
+                    userAddress = userAddress.value,
+                    userAvatarBase64 = userAvatarBase64,
+                    shopImagesBase64 = shopImagesBase
                 )
 
                 val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
@@ -215,6 +325,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val shopList = shops.value
                 val orderList = orders.value
 
+                val (userAvatarBase64, shopImagesBase) = getPhotosBase64(shopList)
+
                 val payload = BackupPayload(
                     products = prodList,
                     shops = shopList,
@@ -223,7 +335,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     businessName = businessName.value,
                     userPhone = userPhone.value,
                     userEmail = userEmail.value,
-                    userAddress = userAddress.value
+                    userAddress = userAddress.value,
+                    userAvatarBase64 = userAvatarBase64,
+                    shopImagesBase64 = shopImagesBase
                 )
 
                 val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
@@ -265,9 +379,24 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val adapter = moshi.adapter(BackupPayload::class.java)
                 val payload = adapter.fromJson(jsonString) ?: throw Exception("ভুল ফাইল ফরম্যাট")
 
+                val restoredShopImagesMap = restorePhotos(payload.userAvatarBase64, payload.shopImagesBase64)
+
                 // Insert elements into the Database
                 payload.products.forEach { repository.insertProduct(it) }
-                payload.shops.forEach { repository.insertShop(it) }
+                
+                payload.shops.forEach { shop ->
+                    val correctedShop = if (shop.imageUri != null) {
+                        val filename = File(shop.imageUri).name
+                        val newPath = restoredShopImagesMap[filename] ?: File(mediaDir, filename).let { 
+                            if (it.exists()) it.absolutePath else null 
+                        }
+                        shop.copy(imageUri = newPath ?: shop.imageUri)
+                    } else {
+                        shop
+                    }
+                    repository.insertShop(correctedShop)
+                }
+
                 payload.orders.forEach { repository.insertOrder(it) }
                 
                 // Restore profile
@@ -465,6 +594,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val products = repository.allProducts.first()
                 val shops = repository.allShops.first()
                 val orders = repository.allOrders.first()
+
+                val (userAvatarBase64, shopImagesBase) = getPhotosBase64(shops)
                 
                 val payload = BackupPayload(
                     products = products,
@@ -474,7 +605,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     businessName = businessName.value,
                     userPhone = userPhone.value,
                     userEmail = userEmail.value,
-                    userAddress = userAddress.value
+                    userAddress = userAddress.value,
+                    userAvatarBase64 = userAvatarBase64,
+                    shopImagesBase64 = shopImagesBase
                 )
                 
                 val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
@@ -501,8 +634,23 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val adapter = moshi.adapter(BackupPayload::class.java)
                 val payload = adapter.fromJson(json) ?: throw Exception("Invalid backup file")
                 
+                val restoredShopImagesMap = restorePhotos(payload.userAvatarBase64, payload.shopImagesBase64)
+
                 payload.products.forEach { repository.insertProduct(it) }
-                payload.shops.forEach { repository.insertShop(it) }
+                
+                payload.shops.forEach { shop ->
+                    val correctedShop = if (shop.imageUri != null) {
+                        val filename = File(shop.imageUri).name
+                        val newPath = restoredShopImagesMap[filename] ?: File(mediaDir, filename).let { 
+                            if (it.exists()) it.absolutePath else null 
+                        }
+                        shop.copy(imageUri = newPath ?: shop.imageUri)
+                    } else {
+                        shop
+                    }
+                    repository.insertShop(correctedShop)
+                }
+
                 payload.orders.forEach { repository.insertOrder(it) }
                 
                 sharedPrefs.edit().apply {
@@ -529,6 +677,165 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getBackupFiles(): List<File> {
         return backupDir.listFiles()?.filter { it.extension == "json" }?.sortedByDescending { it.lastModified() } ?: emptyList()
+    }
+
+    suspend fun getDriveAccessToken(context: Context, email: String, onAuthRequired: (Intent) -> Unit): String? {
+        return try {
+            com.example.utils.GoogleDriveHelper.getAccessToken(context, email)
+        } catch (e: com.google.android.gms.auth.UserRecoverableAuthException) {
+            e.intent?.let { onAuthRequired(it) }
+            null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun backupToGoogleDrive(context: Context, onAuthRequired: (Intent) -> Unit, onComplete: (Boolean, String?) -> Unit) {
+        val email = googleAccountEmail.value
+        if (email == null) {
+            onComplete(false, "No Google Account connected")
+            return
+        }
+        viewModelScope.launch {
+            isDriveLoading.value = true
+            try {
+                val token = getDriveAccessToken(context, email, onAuthRequired)
+                if (token == null) {
+                    isDriveLoading.value = false
+                    return@launch
+                }
+
+                val products = repository.allProducts.first()
+                val shops = repository.allShops.first()
+                val orders = repository.allOrders.first()
+                val (userAvatarBase64, shopImagesBase) = getPhotosBase64(shops)
+
+                val payload = BackupPayload(
+                    products = products,
+                    shops = shops,
+                    orders = orders,
+                    userName = userName.value,
+                    businessName = businessName.value,
+                    userPhone = userPhone.value,
+                    userEmail = userEmail.value,
+                    userAddress = userAddress.value,
+                    userAvatarBase64 = userAvatarBase64,
+                    shopImagesBase64 = shopImagesBase
+                )
+
+                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+                val adapter = moshi.adapter(BackupPayload::class.java)
+                val json = adapter.toJson(payload)
+
+                val success = com.example.utils.GoogleDriveHelper.uploadBackup(token, json)
+                if (success) {
+                    val backups = com.example.utils.GoogleDriveHelper.listBackups(token)
+                    googleDriveBackups.value = backups
+                    onComplete(true, null)
+                } else {
+                    onComplete(false, "Upload failed")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onComplete(false, e.message ?: "Unknown error")
+            } finally {
+                isDriveLoading.value = false
+            }
+        }
+    }
+
+    fun restoreFromGoogleDrive(context: Context, fileId: String, onAuthRequired: (Intent) -> Unit, onComplete: (Boolean, String?) -> Unit) {
+        val email = googleAccountEmail.value
+        if (email == null) {
+            onComplete(false, "No Google Account connected")
+            return
+        }
+        viewModelScope.launch {
+            isDriveLoading.value = true
+            try {
+                val token = getDriveAccessToken(context, email, onAuthRequired)
+                if (token == null) {
+                    isDriveLoading.value = false
+                    return@launch
+                }
+
+                val json = com.example.utils.GoogleDriveHelper.downloadBackup(token, fileId)
+                if (json == null) {
+                    onComplete(false, "Download failed")
+                    return@launch
+                }
+
+                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+                val adapter = moshi.adapter(BackupPayload::class.java)
+                val payload = adapter.fromJson(json) ?: throw Exception("Invalid backup file format")
+
+                val restoredShopImagesMap = restorePhotos(payload.userAvatarBase64, payload.shopImagesBase64)
+
+                payload.products.forEach { repository.insertProduct(it) }
+                
+                payload.shops.forEach { shop ->
+                    val correctedShop = if (shop.imageUri != null) {
+                        val filename = File(shop.imageUri).name
+                        val newPath = restoredShopImagesMap[filename] ?: File(mediaDir, filename).let { 
+                            if (it.exists()) it.absolutePath else null 
+                        }
+                        shop.copy(imageUri = newPath ?: shop.imageUri)
+                    } else {
+                        shop
+                    }
+                    repository.insertShop(correctedShop)
+                }
+
+                payload.orders.forEach { repository.insertOrder(it) }
+                
+                sharedPrefs.edit().apply {
+                    putString("user_name", payload.userName)
+                    putString("business_name", payload.businessName)
+                    putString("user_phone", payload.userPhone)
+                    putString("user_email", payload.userEmail)
+                    putString("user_address", payload.userAddress)
+                }.apply()
+                
+                userName.value = payload.userName
+                businessName.value = payload.businessName
+                userPhone.value = payload.userPhone
+                userEmail.value = payload.userEmail
+                userAddress.value = payload.userAddress
+
+                onComplete(true, null)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onComplete(false, e.message ?: "Unknown error")
+            } finally {
+                isDriveLoading.value = false
+            }
+        }
+    }
+
+    fun deleteGoogleDriveBackup(context: Context, fileId: String, onAuthRequired: (Intent) -> Unit, onComplete: (Boolean) -> Unit) {
+        val email = googleAccountEmail.value ?: return
+        viewModelScope.launch {
+            isDriveLoading.value = true
+            try {
+                val token = getDriveAccessToken(context, email, onAuthRequired)
+                if (token != null) {
+                    val success = com.example.utils.GoogleDriveHelper.deleteBackup(token, fileId)
+                    if (success) {
+                        val backups = com.example.utils.GoogleDriveHelper.listBackups(token)
+                        googleDriveBackups.value = backups
+                    }
+                    onComplete(success)
+                } else {
+                    onComplete(false)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onComplete(false)
+            } finally {
+                isDriveLoading.value = false
+            }
+        }
     }
 
     fun deleteOrder(order: Order) {

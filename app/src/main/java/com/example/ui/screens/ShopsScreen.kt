@@ -261,7 +261,23 @@ fun ShopsScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                     ) {
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (!shop.imageUri.isNullOrBlank()) {
+                            val isImageValid = remember(shop.imageUri) {
+                                if (!shop.imageUri.isNullOrBlank()) {
+                                    if (shop.imageUri.startsWith("content://") || shop.imageUri.startsWith("http://") || shop.imageUri.startsWith("https://")) {
+                                        true
+                                    } else {
+                                        try {
+                                            java.io.File(shop.imageUri).exists()
+                                        } catch (e: Exception) {
+                                            false
+                                        }
+                                    }
+                                } else {
+                                    false
+                                }
+                            }
+
+                            if (isImageValid) {
                                 AsyncImage(
                                     model = shop.imageUri,
                                     contentDescription = "Shop Image",
@@ -271,6 +287,23 @@ fun ShopsScreen(
                                         .clip(RoundedCornerShape(8.dp)),
                                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                                 )
+                                Spacer(modifier = Modifier.height(6.dp))
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(140.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Storefront,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(6.dp))
                             }
                             if (shop.ownerName.isNotBlank()) {
@@ -457,7 +490,23 @@ fun ShopItemRow(
                             .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (!shop.imageUri.isNullOrBlank()) {
+                        val isImageValid = remember(shop.imageUri) {
+                            if (!shop.imageUri.isNullOrBlank()) {
+                                if (shop.imageUri.startsWith("content://") || shop.imageUri.startsWith("http://") || shop.imageUri.startsWith("https://")) {
+                                    true
+                                } else {
+                                    try {
+                                        java.io.File(shop.imageUri).exists()
+                                    } catch (e: Exception) {
+                                        false
+                                    }
+                                }
+                            } else {
+                                false
+                            }
+                        }
+
+                        if (isImageValid) {
                             AsyncImage(
                                 model = shop.imageUri,
                                 contentDescription = "Shop Image",
@@ -631,9 +680,26 @@ fun AddEditShopDialog(
                             .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (!imageUri.isNullOrBlank()) {
+                        val currentImageUri = imageUri
+                        val isImageValid = remember(currentImageUri) {
+                            if (!currentImageUri.isNullOrBlank()) {
+                                if (currentImageUri.startsWith("content://") || currentImageUri.startsWith("http://") || currentImageUri.startsWith("https://")) {
+                                    true
+                                } else {
+                                    try {
+                                        java.io.File(currentImageUri).exists()
+                                    } catch (e: Exception) {
+                                        false
+                                    }
+                                }
+                            } else {
+                                false
+                            }
+                        }
+
+                        if (isImageValid) {
                             AsyncImage(
-                                model = imageUri,
+                                model = currentImageUri,
                                 contentDescription = "Shop Photo",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop

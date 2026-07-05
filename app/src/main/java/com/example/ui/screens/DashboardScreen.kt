@@ -792,10 +792,26 @@ fun RecentOrderRow(
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (shopImageUri != null) {
+                    val isImageValid = remember(shopImageUri) {
+                        if (!shopImageUri.isNullOrBlank()) {
+                            if (shopImageUri.startsWith("content://") || shopImageUri.startsWith("http://") || shopImageUri.startsWith("https://")) {
+                                true
+                            } else {
+                                try {
+                                    java.io.File(shopImageUri).exists()
+                                } catch (e: Exception) {
+                                    false
+                                }
+                            }
+                        } else {
+                            false
+                        }
+                    }
+
+                    if (isImageValid) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(Uri.parse(shopImageUri))
+                                .data(Uri.parse(shopImageUri!!))
                                 .crossfade(true)
                                 .build(),
                             contentDescription = null,

@@ -161,7 +161,23 @@ fun CreateOrderScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             val imageUri = selectedShop?.imageUri
-                            if (!imageUri.isNullOrBlank()) {
+                            val isImageValid = remember(imageUri) {
+                                if (!imageUri.isNullOrBlank()) {
+                                    if (imageUri.startsWith("content://") || imageUri.startsWith("http://") || imageUri.startsWith("https://")) {
+                                        true
+                                    } else {
+                                        try {
+                                            java.io.File(imageUri).exists()
+                                        } catch (e: Exception) {
+                                            false
+                                        }
+                                    }
+                                } else {
+                                    false
+                                }
+                            }
+
+                            if (isImageValid) {
                                 AsyncImage(
                                     model = imageUri,
                                     contentDescription = "Shop Image",
@@ -939,7 +955,23 @@ fun CreateOrderScreen(
                                                 .background(MaterialTheme.colorScheme.secondaryContainer),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            if (!shop.imageUri.isNullOrBlank()) {
+                                            val isImageValid = remember(shop.imageUri) {
+                                                if (!shop.imageUri.isNullOrBlank()) {
+                                                    if (shop.imageUri.startsWith("content://") || shop.imageUri.startsWith("http://") || shop.imageUri.startsWith("https://")) {
+                                                        true
+                                                    } else {
+                                                        try {
+                                                            java.io.File(shop.imageUri).exists()
+                                                        } catch (e: Exception) {
+                                                            false
+                                                        }
+                                                    }
+                                                } else {
+                                                    false
+                                                }
+                                            }
+
+                                            if (isImageValid) {
                                                 AsyncImage(
                                                     model = shop.imageUri,
                                                     contentDescription = "Shop Image",

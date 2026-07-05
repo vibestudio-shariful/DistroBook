@@ -1,5 +1,5 @@
 {
-  "name": "DistroBook",
+  "name": "Distro Book",
   "description": "ডিস্ট্রিবিউশন সাপ্লাই, বিল জেনারেটর এবং অর্ডার ট্র্যাকিং অ্যাপ",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

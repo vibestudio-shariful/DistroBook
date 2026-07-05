@@ -199,6 +199,7 @@ fun ShopsScreen(
         AddEditShopDialog(
             shop = selectedShopForEdit,
             isEnglish = isEnglish,
+            viewModel = viewModel,
             onDismiss = { showAddEditDialog = false },
             onConfirm = { name, ownerName, phone, address, imageUri ->
                 if (selectedShopForEdit == null) {
@@ -575,6 +576,7 @@ fun ShopItemRow(
 fun AddEditShopDialog(
     shop: Shop?,
     isEnglish: Boolean,
+    viewModel: AppViewModel,
     onDismiss: () -> Unit,
     onConfirm: (String, String, String, String, String?) -> Unit
 ) {
@@ -591,9 +593,10 @@ fun AddEditShopDialog(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            val path = saveShopImageToInternalStorage(context, uri)
-            if (path != null) {
-                imageUri = path
+            viewModel.saveShopImage(context, uri) { path ->
+                if (path != null) {
+                    imageUri = path
+                }
             }
         }
     }
@@ -735,21 +738,4 @@ fun AddEditShopDialog(
             }
         }
     )
-}
-
-private fun saveShopImageToInternalStorage(context: android.content.Context, uri: Uri): String? {
-    return try {
-        val resolver = context.contentResolver
-        resolver.openInputStream(uri)?.use { inputStream ->
-            val filename = "shop_${System.currentTimeMillis()}.jpg"
-            val file = File(context.filesDir, filename)
-            file.outputStream().use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
-            file.absolutePath
-        }
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
 }

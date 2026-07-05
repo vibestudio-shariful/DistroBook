@@ -1,0 +1,58 @@
+name: Android Signed APK Builder
+
+on:
+  push:
+    branches:
+      - main  # অথবা আপনার মেইন ব্রাঞ্চের নাম (যেমন: master)
+  workflow_dispatch: # যার মাধ্যমে আপনি যেকোনো সময় ম্যানুয়ালি বিল্ড রান করতে পারবেন
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ১. গিটহাব থেকে কোড ক্লোন করা
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # ২. জাভা এনভায়রনমেন্ট সেটআপ করা (Java 17 অ্যান্ড্রয়েড বিল্ডের জন্য স্ট্যান্ডার্ড)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      # ৩. গ্রেডল রান করার পারমিশন দেওয়া
+      - name: Grant Execute Permission for Gradle
+        run: chmod +x gradlew
+
+      # ৪. এআই স্টুডিও/গ্রেডল দিয়ে আনসাইনড রিলিজ এপিকে তৈরি করা
+      - name: Build Unsigned Release APK
+        run: ./gradlew assembleRelease
+
+      # ৫. আপনার সিক্রেট থেকে Base64 কোড নিয়ে আসল কিস্টোর (.jks) ফাইলটি তৈরি করা
+      - name: Decode Keystore File
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/my-release-key.jks
+
+      # ৬. তৈরি হওয়া Keystore ফাইল এবং পাসওয়ার্ড দিয়ে APK সম্পূর্ণ সাইন করা
+      - name: Sign Release APK
+        run: |
+          # গিটহাব রানারে থাকা লেটেস্ট বিল্ড-টুলস ডিরেক্টরি খুঁজে বের করা
+          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | tail -1)
+          
+          # apksigner দিয়ে সাইন করা এবং আউটপুট ফাইল তৈরি করা
+          $BUILD_TOOLS_DIR/apksigner sign --ks app/my-release-key.jks \
+            --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
+            --ks-key-alias ${{ secrets.KEY_ALIAS }} \
+            --key-pass pass:${{ secrets.KEY_PASSWORD }} \
+            --out app/build/outputs/apk/release/app-release-signed.apk \
+            app/build/outputs/apk/release/app-release-unsigned.apk
+
+      # ৭. সফলভাবে সাইন হওয়া এপিকে-টি গিটহাব অ্যাকশনের 'Artifact' হিসেবে আপলোড করা
+      - name: Upload Signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Signed-Release-APK
+          path: app/build/outputs/apk/release/app-release-signed.apk

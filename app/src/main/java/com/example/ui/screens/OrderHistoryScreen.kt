@@ -48,6 +48,7 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderHistoryScreen(
     viewModel: AppViewModel
@@ -58,17 +59,21 @@ fun OrderHistoryScreen(
     val businessNameVal by viewModel.businessName.collectAsState()
     
     var searchQuery by remember { mutableStateOf("") }
+    var selectedShopId by remember { mutableStateOf<Int?>(null) }
     val selectedTab by viewModel.historySelectedTab.collectAsState()
     var historyFilter by remember { mutableStateOf<ReportFilter>(ReportFilter.AllTime) }
+    
+    val shops by viewModel.shops.collectAsState()
     
     var orderToExport by remember { mutableStateOf<Order?>(null) }
     var selectedOrderDetails by remember { mutableStateOf<Order?>(null) }
     var showDeleteConfirmation by remember { mutableStateOf<Order?>(null) }
     var showPaymentUpdateDialog by remember { mutableStateOf<Order?>(null) }
     
-    val filteredOrders = remember(orders, searchQuery, selectedTab, historyFilter) {
+    val filteredOrders = remember(orders, searchQuery, selectedTab, historyFilter, selectedShopId) {
         orders.filter { order ->
             val matchQuery = order.shopName.contains(searchQuery, ignoreCase = true) || order.remarks.contains(searchQuery, ignoreCase = true)
+            val matchShop = selectedShopId == null || order.shopId == selectedShopId
             val matchStatus = when (selectedTab) {
                 1 -> !order.isPaid // Due
                 2 -> order.isPaid  // Paid
@@ -80,7 +85,7 @@ fun OrderHistoryScreen(
                 is ReportFilter.SpecificDate -> viewModel.isSameDay(order.timestamp, filter.date)
                 is ReportFilter.SpecificMonth -> viewModel.isSameMonth(order.timestamp, filter.year, filter.month)
             }
-            matchQuery && matchStatus && matchDate
+            matchQuery && matchShop && matchStatus && matchDate
         }
     }
 
@@ -118,11 +123,11 @@ fun OrderHistoryScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Search Bar
+            // Search Bar & Shop Filter
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text(t(viewModel, "ক্রেতা বা বিল খুঁজুন (Search Bills)", "Search Bills")) },
+                label = { Text(t(viewModel, "ক্রেতা বা বিল খুঁজুন", "Search Bills")) },
                 placeholder = { Text(t(viewModel, "দোকানের নাম বা বিলের মন্তব্য...", "Shop name or bill remarks...")) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
@@ -138,6 +143,47 @@ fun OrderHistoryScreen(
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true
             )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Shop Selector
+            var expandedShop by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = expandedShop,
+                onExpandedChange = { expandedShop = !expandedShop },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = shops.find { it.id == selectedShopId }?.name ?: (if (isEnglish) "All Customers" else "সব গ্রাহক"),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(if (isEnglish) "Filter by Customer" else "গ্রাহক নির্বাচন") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedShop) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedShop,
+                    onDismissRequest = { expandedShop = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(if (isEnglish) "All Customers" else "সব গ্রাহক") },
+                        onClick = {
+                            selectedShopId = null
+                            expandedShop = false
+                        }
+                    )
+                    shops.forEach { shop ->
+                        DropdownMenuItem(
+                            text = { Text(shop.name) },
+                            onClick = {
+                                selectedShopId = shop.id
+                                expandedShop = false
+                            }
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -350,8 +396,10 @@ fun OrderHistoryScreen(
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     items(filteredOrders, key = { it.id }) { order ->
+                        val shop = shops.find { it.id == order.shopId }
                         RecentOrderRow(
                             order = order,
+                            shopImageUri = shop?.imageUri,
                             onClick = { selectedOrderDetails = order }
                         )
                     }

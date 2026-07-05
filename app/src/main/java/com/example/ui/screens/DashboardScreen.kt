@@ -30,6 +30,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import android.net.Uri
 import com.example.R
 import com.example.ui.t
 import com.example.ui.tNonCompose
@@ -54,6 +56,7 @@ fun DashboardScreen(
 ) {
     val stats by viewModel.stats.collectAsState()
     val recentOrders by viewModel.dashboardOrders.collectAsState()
+    val shops by viewModel.shops.collectAsState()
     val userNameVal by viewModel.userName.collectAsState()
     val businessNameVal by viewModel.businessName.collectAsState()
     val dashboardFilterVal by viewModel.dashboardFilter.collectAsState()
@@ -524,18 +527,6 @@ fun DashboardScreen(
                         onManageProductsClick()
                     }
                 )
-                
-                MetricCard(
-                    title = t(viewModel, "মেয়াদ সতর্কবার্তা", "Expiry Alert"),
-                    value = t(viewModel, "${stats.expiringSoonCount} টি প্রোডাক্ট", "${stats.expiringSoonCount} Products"),
-                    icon = Icons.Outlined.Timer,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    onClick = {
-                        // Optionally filter by expiry
-                        onManageProductsClick()
-                    }
-                )
             }
         }
 
@@ -597,7 +588,12 @@ fun DashboardScreen(
             }
         } else {
             items(listToShow, key = { it.id }) { order ->
-                RecentOrderRow(order = order, onClick = { onOrderClick(order) })
+                val shop = shops.find { it.id == order.shopId }
+                RecentOrderRow(
+                    order = order,
+                    shopImageUri = shop?.imageUri,
+                    onClick = { onOrderClick(order) }
+                )
             }
         }
     }
@@ -762,6 +758,7 @@ fun MiniInfoCard(
 @Composable
 fun RecentOrderRow(
     order: Order,
+    shopImageUri: String? = null,
     onClick: () -> Unit
 ) {
     val formatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
@@ -787,20 +784,32 @@ fun RecentOrderRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Circular icon placeholder matching Tailwind
+                // Circular icon or Shop image
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(20.dp))
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(22.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.ReceiptLong,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    if (shopImageUri != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(Uri.parse(shopImageUri))
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Outlined.ReceiptLong,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
                 
                 Column {

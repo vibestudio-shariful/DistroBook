@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -631,7 +632,125 @@ fun ProfileScreen(
                 }
             }
 
-            // Section 5: App Information Card
+            // Section 5: Data Management Card
+            item {
+                var showBackupFiles by remember { mutableStateOf(false) }
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.Storage, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = t(viewModel, "ডাটা ম্যানেজমেন্ট", "Data Management"),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                        Text(
+                            text = t(viewModel, "আপনার সমস্ত ডাটা সুরক্ষিত রাখতে ব্যাকআপ নিন এবং প্রয়োজনে রিস্টোর করুন। ব্যাকআপ ফাইলটি Documents/DistroBook ফোল্ডারে জমা হয়।", "Backup your data to keep it safe and restore when needed. Backup files are saved in Documents/DistroBook folder."),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    viewModel.backupData { success, message ->
+                                        if (success) {
+                                            Toast.makeText(context, tNonCompose(isEnglish, "ব্যাকআপ সফল হয়েছে!", "Backup Successful!"), Toast.LENGTH_LONG).show()
+                                        } else {
+                                            Toast.makeText(context, tNonCompose(isEnglish, "ব্যাকআপ ব্যর্থ হয়েছে: $message", "Backup Failed: $message"), Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Icon(Icons.Default.Backup, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(t(viewModel, "ব্যাকআপ", "Backup"), fontSize = 13.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = { showBackupFiles = true },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(t(viewModel, "রিস্টোর", "Restore"), fontSize = 13.sp)
+                            }
+                        }
+                    }
+                }
+                
+                if (showBackupFiles) {
+                    val backups = viewModel.getBackupFiles()
+                    AlertDialog(
+                        onDismissRequest = { showBackupFiles = false },
+                        title = { Text(t(viewModel, "ব্যাকআপ ফাইল নির্বাচন করুন", "Select Backup File")) },
+                        text = {
+                            if (backups.isEmpty()) {
+                                Text(t(viewModel, "কোনো ব্যাকআপ ফাইল পাওয়া যায়নি!", "No backup files found!"))
+                            } else {
+                                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    items(backups) { file ->
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    viewModel.restoreData(file) { success, message ->
+                                                        if (success) {
+                                                            Toast.makeText(context, tNonCompose(isEnglish, "সফলভাবে রিস্টোর হয়েছে!", "Restore Successful!"), Toast.LENGTH_SHORT).show()
+                                                            showBackupFiles = false
+                                                        } else {
+                                                            Toast.makeText(context, "Error: $message", Toast.LENGTH_LONG).show()
+                                                        }
+                                                    }
+                                                },
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        ) {
+                                            Text(
+                                                text = file.name,
+                                                modifier = Modifier.padding(12.dp),
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showBackupFiles = false }) {
+                                Text(t(viewModel, "বাতিল", "Cancel"))
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Section 6: App Information Card
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),

@@ -64,8 +64,8 @@ fun CreateOrderScreen(
             product = null,
             isEnglish = isEnglish,
             onDismiss = { showAddProductDialog = false },
-            onConfirm = { name, price, stock, description, unit, expiryDate ->
-                viewModel.addProduct(name, price, stock, description, unit, expiryDate)
+            onConfirm = { name, price, stock, description, unit ->
+                viewModel.addProduct(name, price, stock, description, unit)
                 showAddProductDialog = false
             }
         )

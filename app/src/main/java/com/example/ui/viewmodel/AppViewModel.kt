@@ -12,10 +12,15 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import android.os.Environment
 import java.io.File
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 sealed class ReportFilter {
     object AllTime : ReportFilter()
@@ -72,13 +77,51 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         isEnglish.value = enabled
     }
 
-    // Save Avatar Photo to Private Storage
+    // Dedicated app storage directory in Documents for visibility
+    private val appStorageDir = File(
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+        "DistroBook"
+    ).apply {
+        if (!exists()) {
+            try {
+                mkdirs()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private val mediaDir = File(appStorageDir, "Media").apply { if (!exists()) mkdirs() }
+    private val backupDir = File(appStorageDir, "Backups").apply { if (!exists()) mkdirs() }
+
+    fun getMediaDir(): File = mediaDir
+
+    fun saveShopImage(context: Context, uri: Uri, onResult: (String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val resolver = context.contentResolver
+                resolver.openInputStream(uri)?.use { inputStream ->
+                    val filename = "shop_${System.currentTimeMillis()}.jpg"
+                    val file = File(mediaDir, filename)
+                    file.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                    onResult(file.absolutePath)
+                } ?: onResult(null)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onResult(null)
+            }
+        }
+    }
+
+    // Save Avatar Photo to Public Storage
     fun saveUserAvatar(context: Context, uri: Uri) {
         viewModelScope.launch {
             try {
                 val contentResolver = context.contentResolver
                 contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val avatarFile = File(context.filesDir, "user_avatar.jpg")
+                    val avatarFile = File(mediaDir, "user_avatar.jpg")
                     avatarFile.outputStream().use { outputStream ->
                         inputStream.copyTo(outputStream)
                     }
@@ -276,16 +319,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val totalDue = filteredOrders.sumOf { it.dueAmount }
         val activeShops = shopList.size
         val lowStockProducts = prodList.count { it.stock <= 5 }
-        val now = System.currentTimeMillis()
-        val expiringSoonProducts = prodList.count { it.expiryDate != null && it.expiryDate!! > now && it.expiryDate!! <= now + 7 * 24 * 60 * 60 * 1000 }
         
         DashboardStats(
             totalSales = totalSales,
             totalCollected = totalCollected,
             totalDue = totalDue,
             activeShops = activeShops,
-            lowStockCount = lowStockProducts,
-            expiringSoonCount = expiringSoonProducts
+            lowStockCount = lowStockProducts
         )
     }.stateIn(
         viewModelScope,
@@ -308,9 +348,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     // Product actions
-    fun addProduct(name: String, price: Double, stock: Int, description: String = "", unit: String = "Pcs", expiryDate: Long? = null) {
+    fun addProduct(name: String, price: Double, stock: Int, description: String = "", unit: String = "Pcs") {
         viewModelScope.launch {
-            repository.insertProduct(Product(name = name, price = price, stock = stock, description = description, unit = unit, expiryDate = expiryDate))
+            repository.insertProduct(Product(name = name, price = price, stock = stock, description = description, unit = unit))
         }
     }
 
@@ -386,6 +426,78 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun backupData(onComplete: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val products = repository.allProducts.first()
+                val shops = repository.allShops.first()
+                val orders = repository.allOrders.first()
+                
+                val payload = BackupPayload(
+                    products = products,
+                    shops = shops,
+                    orders = orders,
+                    userName = userName.value,
+                    businessName = businessName.value,
+                    userPhone = userPhone.value,
+                    userEmail = userEmail.value,
+                    userAddress = userAddress.value
+                )
+                
+                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+                val adapter = moshi.adapter(BackupPayload::class.java)
+                val json = adapter.toJson(payload)
+                
+                val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val backupFile = File(backupDir, "Backup_$timestamp.json")
+                backupFile.writeText(json)
+                
+                onComplete(true, backupFile.absolutePath)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onComplete(false, e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun restoreData(file: File, onComplete: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val json = file.readText()
+                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+                val adapter = moshi.adapter(BackupPayload::class.java)
+                val payload = adapter.fromJson(json) ?: throw Exception("Invalid backup file")
+                
+                payload.products.forEach { repository.insertProduct(it) }
+                payload.shops.forEach { repository.insertShop(it) }
+                payload.orders.forEach { repository.insertOrder(it) }
+                
+                sharedPrefs.edit().apply {
+                    putString("user_name", payload.userName)
+                    putString("business_name", payload.businessName)
+                    putString("user_phone", payload.userPhone)
+                    putString("user_email", payload.userEmail)
+                    putString("user_address", payload.userAddress)
+                }.apply()
+                
+                userName.value = payload.userName
+                businessName.value = payload.businessName
+                userPhone.value = payload.userPhone
+                userEmail.value = payload.userEmail
+                userAddress.value = payload.userAddress
+                
+                onComplete(true, "Data restored successfully")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onComplete(false, e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun getBackupFiles(): List<File> {
+        return backupDir.listFiles()?.filter { it.extension == "json" }?.sortedByDescending { it.lastModified() } ?: emptyList()
+    }
+
     fun deleteOrder(order: Order) {
         viewModelScope.launch {
             repository.deleteOrder(order)
@@ -398,6 +510,5 @@ data class DashboardStats(
     val totalCollected: Double = 0.0,
     val totalDue: Double = 0.0,
     val activeShops: Int = 0,
-    val lowStockCount: Int = 0,
-    val expiringSoonCount: Int = 0
+    val lowStockCount: Int = 0
 )

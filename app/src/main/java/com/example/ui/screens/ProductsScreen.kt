@@ -475,7 +475,11 @@ fun AddEditProductDialog(
                         singleLine = true
                     )
                     
-                    Box(modifier = Modifier.weight(1f)) {
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded },
+                        modifier = Modifier.weight(1f)
+                    ) {
                         OutlinedTextField(
                             value = selectedUnit,
                             onValueChange = {},
@@ -486,17 +490,21 @@ fun AddEditProductDialog(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { expanded = true },
+                                .menuAnchor(),
                             colors = OutlinedTextFieldDefaults.colors()
                         )
-                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
                             units.forEach { unit ->
                                 DropdownMenuItem(
                                     text = { Text(unit) },
                                     onClick = {
                                         selectedUnit = unit
                                         expanded = false
-                                    }
+                                    },
+                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                                 )
                             }
                         }

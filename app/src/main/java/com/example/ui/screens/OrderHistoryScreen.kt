@@ -93,7 +93,8 @@ fun OrderHistoryScreen(
                 val pdfDoc = if (order != null) {
                     generateInvoicePdf(order, businessNameVal, isEnglish)
                 } else {
-                    generateReportPdf(filteredOrders, businessNameVal, isEnglish)
+                    val reportTitle = getReportTitle(selectedTab, historyFilter, isEnglish)
+                    generateReportPdf(filteredOrders, businessNameVal, reportTitle, isEnglish)
                 }
                 context.contentResolver.openOutputStream(it)?.use { fos ->
                     pdfDoc.writeTo(fos)
@@ -752,7 +753,7 @@ private fun generateInvoicePdf(order: Order, businessName: String, isEnglish: Bo
     return pdfDocument
 }
 
-private fun generateReportPdf(orders: List<Order>, businessName: String, isEnglish: Boolean): PdfDocument {
+private fun generateReportPdf(orders: List<Order>, businessName: String, reportTitle: String, isEnglish: Boolean): PdfDocument {
     val pdfDocument = PdfDocument()
     val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
     val page = pdfDocument.startPage(pageInfo)
@@ -774,7 +775,7 @@ private fun generateReportPdf(orders: List<Order>, businessName: String, isEngli
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
 
-    canvas.drawText("$businessName - ${if (isEnglish) "Order Report" else "অর্ডার রিপোর্ট"}", 40f, 60f, headerPaint)
+    canvas.drawText("$businessName - $reportTitle", 40f, 60f, headerPaint)
     
     var y = 100f
     
@@ -811,6 +812,22 @@ private fun generateReportPdf(orders: List<Order>, businessName: String, isEngli
 
     pdfDocument.finishPage(page)
     return pdfDocument
+}
+
+
+private fun getReportTitle(selectedTab: Int, historyFilter: ReportFilter, isEnglish: Boolean): String {
+    val tabLabel = when (selectedTab) {
+        1 -> if (isEnglish) "Due" else "বকেয়া"
+        2 -> if (isEnglish) "Paid" else "পরিশোধিত"
+        else -> ""
+    }
+    val filterLabel = when (val filter = historyFilter) {
+        is ReportFilter.AllTime -> if (isEnglish) "All Time" else "সব সময়ের"
+        is ReportFilter.Today -> if (isEnglish) "Today" else "দৈনিক"
+        is ReportFilter.SpecificDate -> if (isEnglish) "Specific Date" else "নির্দিষ্ট তারিখের"
+        is ReportFilter.SpecificMonth -> if (isEnglish) "Monthly" else "মাসিক"
+    }
+    return if (isEnglish) "$filterLabel $tabLabel Report" else "$filterLabel $tabLabel রিপোর্ট"
 }
 
 private fun openPdfFile(context: android.content.Context, file: File) {

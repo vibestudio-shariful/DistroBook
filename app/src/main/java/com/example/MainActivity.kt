@@ -1,5 +1,6 @@
 package com.example
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,10 +14,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -55,6 +59,16 @@ fun MainAppScreen() {
   val currentRoute = navBackStackEntry?.destination?.route
   val isEnglish by viewModel.isEnglish.collectAsState()
   val isDarkMode by viewModel.isDarkMode.collectAsState()
+
+  // Set Navigation Bar Color
+  val view = LocalView.current
+  val navBarColor = MaterialTheme.colorScheme.primaryContainer.toArgb()
+  SideEffect {
+    val window = (view.context as Activity).window
+    window.navigationBarColor = navBarColor
+    // Optionally set status bar color
+    window.statusBarColor = navBarColor
+  }
 
   Scaffold(
     modifier = Modifier.fillMaxSize(),

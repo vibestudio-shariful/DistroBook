@@ -489,7 +489,7 @@ fun DashboardScreen(
             val isDarkMode by viewModel.isDarkMode.collectAsState()
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 // Large primary due card (since due is highly crucial for supplier)
-                val dueBg = if (isDarkMode) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f) else Color(0xFFF9DEDC)
+                val dueBg = MaterialTheme.colorScheme.errorContainer.copy(alpha = if (isDarkMode) 0.6f else 0.3f)
                 val dueColor = if (isDarkMode) MaterialTheme.colorScheme.onErrorContainer else Color(0xFF410E0B)
                 MetricCard(
                     title = t(viewModel, "মোট বকেয়া (Due Amount)", "Total Dues"),
@@ -507,7 +507,7 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    val collectedBg = if (isDarkMode) MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f) else Color(0xFFD2E8D1)
+                    val collectedBg = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = if (isDarkMode) 0.6f else 0.3f)
                     val collectedColor = if (isDarkMode) MaterialTheme.colorScheme.onTertiaryContainer else Color(0xFF0A210B)
                     MetricCard(
                         title = t(viewModel, "মোট আদায়", "Total Collected"),
@@ -523,9 +523,9 @@ fun DashboardScreen(
                     )
                     
                     val warningBg = if (stats.lowStockCount > 0) {
-                        if (isDarkMode) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f) else Color(0xFFFFF3E0)
+                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = if (isDarkMode) 0.6f else 0.3f)
                     } else {
-                        if (isDarkMode) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFECEFF1)
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDarkMode) 0.6f else 0.3f)
                     }
                     val warningColor = if (stats.lowStockCount > 0) {
                         if (isDarkMode) MaterialTheme.colorScheme.onSecondaryContainer else Color(0xFFE65100)

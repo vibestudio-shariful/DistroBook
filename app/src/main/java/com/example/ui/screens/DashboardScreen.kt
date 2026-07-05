@@ -688,6 +688,7 @@ fun MetricCard(
             containerColor = containerColor,
             contentColor = contentColor
         ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(

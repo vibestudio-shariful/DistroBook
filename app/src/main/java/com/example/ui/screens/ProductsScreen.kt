@@ -426,7 +426,7 @@ fun AddEditProductDialog(
     var stockStr by remember { mutableStateOf(product?.stock?.let { if (it == 0) "" else it.toString() } ?: "") }
     var description by remember { mutableStateOf(product?.description ?: "") }
     
-    val units = listOf("Pcs", "Packet", "Sack", "Kg", "Gram")
+    val units = listOf("Pcs", "Packet", "Sack", "Kg", "Gram", "Liter", "Dozen")
     var selectedUnit by remember { mutableStateOf(product?.unit ?: units[0]) }
     var expanded by remember { mutableStateOf(false) }
 

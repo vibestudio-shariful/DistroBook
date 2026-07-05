@@ -41,7 +41,8 @@ import coil.compose.AsyncImage
 @Composable
 fun CreateOrderScreen(
     viewModel: AppViewModel,
-    onOrderPlacedSuccessfully: () -> Unit
+    onOrderPlacedSuccessfully: () -> Unit,
+    onAddProductClick: () -> Unit
 ) {
     val context = LocalContext.current
     val shops by viewModel.shops.collectAsState()
@@ -56,6 +57,19 @@ fun CreateOrderScreen(
     var showShopSelectionDialog by remember { mutableStateOf(false) }
     var shopSearchQuery by remember { mutableStateOf("") }
     var showAddShopQuickDialog by remember { mutableStateOf(false) }
+    var showAddProductDialog by remember { mutableStateOf(false) }
+
+    if (showAddProductDialog) {
+        AddEditProductDialog(
+            product = null,
+            isEnglish = isEnglish,
+            onDismiss = { showAddProductDialog = false },
+            onConfirm = { name, price, stock, description, unit ->
+                viewModel.addProduct(name, price, stock, description, unit)
+                showAddProductDialog = false
+            }
+        )
+    }
     
     // Map of ProductId -> Selected Quantity
     val selectedQuantities = remember { mutableStateMapOf<Int, Int>() }
@@ -221,12 +235,26 @@ fun CreateOrderScreen(
 
             // Section 2: Choose Products & Quantities
             item {
-                Text(
-                    text = if (isEnglish) "2. Select Products & Quantities *" else "২. প্রোডাক্ট ও পরিমাণ সিলেক্ট করুন *",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (isEnglish) "2. Select Products & Quantities *" else "২. প্রোডাক্ট ও পরিমাণ সিলেক্ট করুন *",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    IconButton(
+                        onClick = { showAddProductDialog = true },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(8.dp))
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add New Product", tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
+                    }
+                }
             }
 
             if (products.isNotEmpty()) {

@@ -217,7 +217,8 @@ fun MainAppScreen() {
             navController.navigate("history") {
               popUpTo("dashboard") { inclusive = false }
             }
-          }
+          },
+          onAddProductClick = { navController.navigate("products") }
         )
       }
       composable("history") {

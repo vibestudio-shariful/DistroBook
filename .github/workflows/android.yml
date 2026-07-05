@@ -1,57 +1,66 @@
-name: Android Signed APK Builder
+name: Android Build APK
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-          cache: 'gradle'
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
 
-      # নতুন যুক্ত করা ফিক্সিং স্টেপ
-      - name: Fix Invalid or Corrupt Gradle Wrapper
-        run: |
-          cd gradle/wrapper
-          rm -f gradle-wrapper.jar
-          curl -LO https://raw.githubusercontent.com/gradle/gradle/v8.7/gradle/wrapper/gradle-wrapper.jar
-          cd ../..
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: '9.3.1'
+        validate-wrappers: false # <-- এখানে সঠিক প্যারামিটারটি ব্যবহার করা হয়েছে
 
-      - name: Grant Execute Permission for Gradle
-        run: chmod +x gradlew
+    - name: Regenerate Gradle Wrapper
+      run: |
+        rm -f gradle/wrapper/gradle-wrapper.jar
+        rm -f gradle/wrapper/gradle-wrapper.properties
+        gradle wrapper
 
-      - name: Build Unsigned Release APK
-        run: ./gradlew assembleRelease
+    - name: Set up Environment Variables
+      run: |
+        if [ -f .env.example ]; then
+          cp .env.example .env
+        else
+          echo "No .env.example found, creating empty .env"
+          touch .env
+        fi
 
-      - name: Decode Keystore File
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/my-release-key.jks
+    - name: Restore Debug Keystore
+      run: |
+        if [ -f debug.keystore.base64 ]; then
+          base64 -d debug.keystore.base64 > debug.keystore
+          echo "Debug Keystore restored from Base64"
+        else
+          echo "No debug.keystore.base64 found, generating a default one..."
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -storetype PKCS12
+        fi
 
-      - name: Sign Release APK
-        run: |
-          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | tail -1)
-          
-          $BUILD_TOOLS_DIR/apksigner sign --ks app/my-release-key.jks \
-            --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
-            --ks-key-alias ${{ secrets.KEY_ALIAS }} \
-            --key-pass pass:${{ secrets.KEY_PASSWORD }} \
-            --out app/build/outputs/apk/release/app-release-signed.apk \
-            app/build/outputs/apk/release/app-release-unsigned.apk
+    - name: Grant Execute Permission for Gradle Wrapper
+      run: chmod +x gradlew
 
-      - name: Upload Signed APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Signed-Release-APK
-          path: app/build/outputs/apk/release/app-release-signed.apk
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug -Pkotlin.compiler.execution.strategy=daemon
+
+    - name: Upload Debug APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: distro-book-debug-apk
+        path: app/build/outputs/apk/debug/app-debug.apk

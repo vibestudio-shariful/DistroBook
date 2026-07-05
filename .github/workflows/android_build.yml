@@ -3,8 +3,8 @@ name: Android Signed APK Builder
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main  # অথবা আপনার মেইন ব্রাঞ্চের নাম (যেমন: master)
+  workflow_dispatch: # যার মাধ্যমে আপনি যেকোনো সময় ম্যানুয়ালি বিল্ড রান করতে পারবেন
 
 jobs:
   build:
@@ -15,62 +15,44 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # ২. জাভা এনভায়রনমেন্ট সেটআপ করা
-      - name: Set up JDK 21
+      # ২. জাভা এনভায়রনমেন্ট সেটআপ করা (Java 17 অ্যান্ড্রয়েড বিল্ডের জন্য স্ট্যান্ডার্ড)
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '21'
+          java-version: '17'
 
-      # ৩. গ্রেডল সেটআপ করা এবং র‍্যাপার ভ্যালিডেশন বন্ধ করা
+      # ৩. গ্রেডল সেটআপ করা (যাতে লোকাল র্যাপার বা উইন্ডোজ CRLF লাইনের কোনো সমস্যা ছাড়াই ৯.৩.১ ভার্সনে বিল্ড হতে পারে এবং র্যাপার ভ্যালিডেশন বন্ধ রাখা হয়েছে)
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
           validate-wrappers: false
 
-      # ৪. Secrets থেকে কিস্টোর ফাইলটি তৈরি করা
+      # ৪. গ্রেডল দিয়ে আনসাইনড রিলিজ এপিকে তৈরি করা (র্যাপার ছাড়াই সরাসরি গ্লোবাল গ্রেডল দিয়ে, যা ১০০% সিকিউর ও ঝামেলামুক্ত)
+      - name: Build Unsigned Release APK
+        run: gradle assembleRelease
+
+      # ৫. আপনার সিক্রেট থেকে Base64 কোড নিয়ে আসল কিস্টোর (.jks) ফাইলটি তৈরি করা
       - name: Decode Keystore File
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/my-release-key.jks
 
-      # ৫. গ্রেডল দিয়ে রিলিজ এপিকে তৈরি করা
-      # (কমান্ড লাইনেই পাসওয়ার্ড ওভাররাইড করা হচ্ছে এবং কনফিগারেশন ক্যাশ সাময়িক বন্ধ করা হচ্ছে যেন এরর না আসে)
-      - name: Build Release APK
+      # ৬. তৈরি হওয়া Keystore ফাইল এবং পাসওয়ার্ড দিয়ে APK সম্পূর্ণ সাইন করা
+      - name: Sign Release APK
         run: |
-          gradle assembleRelease --no-configuration-cache \
-            -Pandroid.injected.signing.store.file=../my-upload-key.jks \
-            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
-        continue-on-error: true # যদি গ্রেডল তাও এরর দেয়, বিল্ড যেন এখানে আটকে না গিয়ে পরের স্টেপে সাইন হতে পারে
-
-      # ৬. ফাইনাল এবং ফুলপ্রুফ সাইনিং স্টেপ (এটি গ্যারান্টেড সাইনড এপিকে তৈরি করবে)
-      - name: Force Sign APK with Build Tools apksigner
-        run: |
+          # গিটহাব রানারে থাকা লেটেস্ট বিল্ড-টুলস ডিরেক্টরি খুঁজে বের করা
           BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | tail -1)
-          mkdir -p app/build/outputs/apk/release/
           
-          # গ্রেডল কোনো এপিকে তৈরি করেছে কিনা তা চেক করা, না করলে আনসাইনড ফাইলটি খুঁজে বের করা
-          UNSIGNED_APK=$(find app/build/outputs/apk/ -name "*unsigned.apk" -o -name "*release.apk" | head -n 1)
-          
-          if [ -z "$UNSIGNED_APK" ]; then
-            echo "No APK found, trying alternative build approach..."
-            gradle assembleDebug --no-configuration-cache
-            UNSIGNED_APK=$(find app/build/outputs/apk/ -name "*debug.apk" | head -n 1)
-          fi
-          
-          echo "Signing APK: $UNSIGNED_APK"
-          
-          # অফিসিয়াল apksigner দিয়ে ফাইনাল রিলিজ সাইন করা
-          $BUILD_TOOLS_DIR/apksigner sign --ks my-upload-key.jks \
+          # apksigner দিয়ে সাইন করা এবং আউটপুট ফাইল তৈরি করা
+          $BUILD_TOOLS_DIR/apksigner sign --ks app/my-release-key.jks \
             --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
             --ks-key-alias ${{ secrets.KEY_ALIAS }} \
             --key-pass pass:${{ secrets.KEY_PASSWORD }} \
             --out app/build/outputs/apk/release/app-release-signed.apk \
-            "$UNSIGNED_APK"
+            app/build/outputs/apk/release/app-release-unsigned.apk
 
-      # ৭. সফলভাবে সাইন হওয়া এপিকে-টি গিটহাব অ্যাকশনের 'Artifact' হিসেবে আপলোড করা
+      # ৭. সফলভাবে সাইন হওয়া এপিকে-টি গিটহাব অ্যাকশনের 'Artifact' হিসেবে আপলোড করা
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:

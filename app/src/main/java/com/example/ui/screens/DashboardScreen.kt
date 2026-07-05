@@ -605,7 +605,7 @@ fun DashboardScreen(
                 }
             }
         } else {
-            items(listToShow) { order ->
+            items(listToShow, key = { it.id }) { order ->
                 RecentOrderRow(order = order, onClick = { onOrderClick(order) })
             }
         }

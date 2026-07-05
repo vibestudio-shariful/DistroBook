@@ -234,8 +234,16 @@ fun ShopsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(text = shop.name, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                    IconButton(onClick = { selectedShopDetails = null }) {
-                        Icon(Icons.Outlined.Close, contentDescription = if (isEnglish) "Close" else "বন্ধ করুন")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = {
+                            selectedShopForEdit = shop
+                            showAddEditDialog = true
+                        }) {
+                            Icon(Icons.Outlined.Edit, contentDescription = "Edit")
+                        }
+                        IconButton(onClick = { selectedShopDetails = null }) {
+                            Icon(Icons.Outlined.Close, contentDescription = if (isEnglish) "Close" else "বন্ধ করুন")
+                        }
                     }
                 }
             },
@@ -368,8 +376,21 @@ fun ShopsScreen(
                 }
             },
             confirmButton = {
-                Button(onClick = { selectedShopDetails = null }) {
-                    Text(if (isEnglish) "OK" else "ঠিক আছে")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (shopTotalDue > 0) {
+                        Button(
+                            onClick = {
+                                viewModel.collectAllShopDues(shop.id)
+                                selectedShopDetails = null
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                        ) {
+                            Text(if (isEnglish) "Collect Due" else "বকেয়া আদায়")
+                        }
+                    }
+                    Button(onClick = { selectedShopDetails = null }) {
+                        Text(if (isEnglish) "OK" else "ঠিক আছে")
+                    }
                 }
             }
         )

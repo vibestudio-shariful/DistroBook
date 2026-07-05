@@ -63,7 +63,7 @@ fun CreateOrderScreen(
     val customPrices = remember { mutableStateMapOf<Int, Double>() }
     
     var paidAmountStr by remember { mutableStateOf("") }
-    var remarks by remember { mutableStateOf("") }
+
     
     var showReviewDialog by remember { mutableStateOf(false) }
 
@@ -577,21 +577,7 @@ fun CreateOrderScreen(
                     }
                 }
 
-                OutlinedTextField(
-                    value = remarks,
-                    onValueChange = { remarks = it },
-                    label = { Text(if (isEnglish) "Remarks / Note (Optional)" else "অন্যান্য মন্তব্য / নোট (ঐচ্ছিক)") },
-                    placeholder = { Text(if (isEnglish) "e.g. Transport cost 50 tk" else "যেমন- গাড়ি ভাড়া ৫০ টাকা") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
-                )
+
 
                 // Confirm action button (Triggers the Review Dialog first!)
                 Button(
@@ -659,7 +645,7 @@ fun CreateOrderScreen(
                             .heightIn(max = 240.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(selectedItemsList) { item ->
+                        items(selectedItemsList, key = { it.productId }) { item ->
                             val product = products.find { it.id == item.productId }
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -775,8 +761,7 @@ fun CreateOrderScreen(
                                 shopName = shop.name,
                                 items = selectedItemsList,
                                 totalAmount = totalAmount,
-                                paidAmount = paidAmount,
-                                remarks = remarks
+                                paidAmount = paidAmount
                             )
                             val orderSuccessMsg = tNonCompose(isEnglish, "বিল সফলভাবে সংরক্ষণ ও স্টক আপডেট করা হয়েছে!", "Order placed successfully and stock updated!")
                             Toast.makeText(context, orderSuccessMsg, Toast.LENGTH_LONG).show()

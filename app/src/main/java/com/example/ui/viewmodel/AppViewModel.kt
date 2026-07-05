@@ -28,7 +28,12 @@ sealed class ReportFilter {
 data class BackupPayload(
     val products: List<Product>,
     val shops: List<Shop>,
-    val orders: List<Order>
+    val orders: List<Order>,
+    val userName: String,
+    val businessName: String,
+    val userPhone: String,
+    val userEmail: String,
+    val userAddress: String
 )
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
@@ -103,7 +108,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val payload = BackupPayload(
                     products = prodList,
                     shops = shopList,
-                    orders = orderList
+                    orders = orderList,
+                    userName = userName.value,
+                    businessName = businessName.value,
+                    userPhone = userPhone.value,
+                    userEmail = userEmail.value,
+                    userAddress = userAddress.value
                 )
 
                 val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
@@ -132,7 +142,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val payload = BackupPayload(
                     products = prodList,
                     shops = shopList,
-                    orders = orderList
+                    orders = orderList,
+                    userName = userName.value,
+                    businessName = businessName.value,
+                    userPhone = userPhone.value,
+                    userEmail = userEmail.value,
+                    userAddress = userAddress.value
                 )
 
                 val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
@@ -178,6 +193,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 payload.products.forEach { repository.insertProduct(it) }
                 payload.shops.forEach { repository.insertShop(it) }
                 payload.orders.forEach { repository.insertOrder(it) }
+                
+                // Restore profile
+                saveUserProfile(payload.userName, payload.businessName, payload.userPhone, payload.userEmail, payload.userAddress)
 
                 onSuccess()
             } catch (e: Exception) {
@@ -325,7 +343,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // Order actions
-    fun createOrder(shopId: Int, shopName: String, items: List<OrderItem>, totalAmount: Double, paidAmount: Double, remarks: String = "") {
+    fun createOrder(shopId: Int, shopName: String, items: List<OrderItem>, totalAmount: Double, paidAmount: Double) {
         viewModelScope.launch {
             val isPaid = paidAmount >= totalAmount
             val order = Order(
@@ -335,7 +353,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 totalAmount = totalAmount,
                 paidAmount = paidAmount,
                 isPaid = isPaid,
-                remarks = remarks
+                remarks = ""
             )
             repository.insertOrder(order)
         }
@@ -349,6 +367,19 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 isPaid = newPaidAmount >= order.totalAmount
             )
             repository.updateOrder(updatedOrder)
+        }
+    }
+
+    fun collectAllShopDues(shopId: Int) {
+        viewModelScope.launch {
+            val shopOrders = repository.allOrders.first().filter { it.shopId == shopId && !it.isPaid }
+            shopOrders.forEach { order ->
+                val updatedOrder = order.copy(
+                    paidAmount = order.totalAmount,
+                    isPaid = true
+                )
+                repository.updateOrder(updatedOrder)
+            }
         }
     }
 

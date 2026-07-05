@@ -451,13 +451,13 @@ fun OrderHistoryScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.PictureAsPdf,
+                            imageVector = Icons.Outlined.Print,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (isEnglish) "Export Invoice PDF" else "মেমো পিডিএফ এক্সপোর্ট করুন",
+                            text = if (isEnglish) "Print Invoice" else "মেমো প্রিন্ট করুন",
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -733,30 +733,26 @@ private fun exportInvoiceToPdf(context: android.content.Context, order: Order, b
         }
         Toast.makeText(context, successMsg, Toast.LENGTH_LONG).show()
 
-        sharePdfFile(context, pdfFile)
+        // sharePdfFile(context, pdfFile)
+        openPdfFile(context, pdfFile)
     } catch (e: Exception) {
         e.printStackTrace()
         Toast.makeText(context, "Error saving PDF: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
     }
 }
 
-private fun sharePdfFile(context: android.content.Context, file: File) {
+private fun openPdfFile(context: android.content.Context, file: File) {
     try {
         val authority = "${context.packageName}.fileprovider"
         val uri = FileProvider.getUriForFile(context, authority, file)
         
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/pdf"
-            putExtra(Intent.EXTRA_STREAM, uri)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/pdf")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(intent, "Share Invoice PDF"))
+        context.startActivity(intent)
     } catch (e: Exception) {
         e.printStackTrace()
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/pdf"
-            putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file))
-        }
-        context.startActivity(Intent.createChooser(intent, "Share Invoice PDF"))
+        Toast.makeText(context, "Could not open PDF for printing", Toast.LENGTH_SHORT).show()
     }
 }

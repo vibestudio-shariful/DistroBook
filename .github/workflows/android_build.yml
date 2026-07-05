@@ -25,7 +25,7 @@ jobs:
       # ৩. আপনার সিক্রেট থেকে Base64 কোড নিয়ে আসল কিস্টোর (.jks) ফাইলটি তৈরি করা (গ্রেডল রান করার আগেই তৈরি করতে হবে)
       - name: Decode Keystore File
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\r \n' | base64 --decode > my-upload-key.jks
 
       # ৪. গ্রেডল সেটআপ করা (যাতে লোকাল র্যাপার বা উইন্ডোজ CRLF লাইনের কোনো সমস্যা ছাড়াই ৯.৩.১ ভার্সনে বিল্ড হতে পারে এবং র্যাপার ভ্যালিডেশন বন্ধ রাখা হয়েছে)
       - name: Setup Gradle
@@ -40,6 +40,7 @@ jobs:
           STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
         run: gradle assembleRelease
 
       # ৬. সফলভাবে সাইন হওয়া এপিকে-টি গিটহাব অ্যাকশনের 'Artifact' হিসেবে আপলোড করা

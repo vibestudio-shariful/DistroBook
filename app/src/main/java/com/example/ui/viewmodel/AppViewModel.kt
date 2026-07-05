@@ -60,6 +60,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     // Language state: true for English, false for Bangla (default)
     val isEnglish = MutableStateFlow(sharedPrefs.getBoolean("is_english", false))
 
+    val historySelectedTab = MutableStateFlow(0) // 0 = All, 1 = Due, 2 = Paid
+
     fun setLanguage(enabled: Boolean) {
         sharedPrefs.edit().putBoolean("is_english", enabled).apply()
         isEnglish.value = enabled
@@ -236,6 +238,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         dashboardFilter.value = filter
     }
 
+    val showOnlyLowStockInProducts = MutableStateFlow(false)
+
+    fun setShowOnlyLowStockInProducts(value: Boolean) {
+        showOnlyLowStockInProducts.value = value
+    }
+
     // Dashboard Statistics
     val stats = combine(products, shops, orders, dashboardFilter) { prodList, shopList, orderList, filter ->
         val filteredOrders = when (filter) {
@@ -298,9 +306,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // Shop actions
-    fun addShop(name: String, ownerName: String, phone: String, address: String) {
+    fun addShop(name: String, ownerName: String, phone: String, address: String, imageUri: String? = null) {
         viewModelScope.launch {
-            repository.insertShop(Shop(name = name, ownerName = ownerName, phone = phone, address = address))
+            repository.insertShop(Shop(name = name, ownerName = ownerName, phone = phone, address = address, imageUri = imageUri))
         }
     }
 

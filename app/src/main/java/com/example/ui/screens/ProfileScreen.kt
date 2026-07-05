@@ -107,45 +107,7 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(t(viewModel, "প্রোফাইল ও সেটিংস", "Profile & Settings"), fontWeight = FontWeight.Bold, fontSize = 20.sp) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    // Language switch button
-                    IconButton(
-                        onClick = { viewModel.setLanguage(!isEnglish) },
-                        modifier = Modifier.testTag("profile_action_toggle_language")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Translate,
-                            contentDescription = if (isEnglish) "Switch to Bangla" else "ইংরেজিতে পরিবর্তন করুন",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    // Theme toggle button
-                    IconButton(
-                        onClick = { viewModel.setDarkMode(!isDarkMode) },
-                        modifier = Modifier.testTag("profile_action_toggle_theme")
-                    ) {
-                        Icon(
-                            imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
-                            contentDescription = if (isEnglish) "Toggle Theme" else "থিম পরিবর্তন করুন",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        }
+        // TopAppBar is handled by MainActivity
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -556,8 +518,8 @@ fun ProfileScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
-                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)),
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
@@ -579,7 +541,7 @@ fun ProfileScreen(
                             )
                         }
 
-                        Divider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                        Divider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
 
                         DeveloperInfoRow(
                             label = t(viewModel, "ডেভেলপার নাম", "Developer Name"),
@@ -603,19 +565,53 @@ fun ProfileScreen(
                         )
 
                         DeveloperInfoRow(
-                            label = t(viewModel, "মোবাইল নম্বর", "Mobile Number"),
+                            label = t(viewModel, "মোবাইল নম্বর (হোয়াটসঅ্যাপ)", "Mobile Number (WhatsApp)"),
                             value = "01768899599",
                             icon = Icons.Default.Phone,
                             isClickable = true,
                             onClick = {
                                 try {
-                                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:01768899599"))
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/8801768899599"))
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, tNonCompose(isEnglish, "ডায়ালার ওপেন করা সম্ভব হয়নি", "Could not open dialer"), Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, tNonCompose(isEnglish, "হোয়াটসঅ্যাপ ওপেন করা সম্ভব হয়নি", "Could not open WhatsApp"), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+                        
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                                .clickable {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/8801768899599"))
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, tNonCompose(isEnglish, "হোয়াটসঅ্যাপ ওপেন করা সম্ভব হয়নি", "Could not open WhatsApp"), Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Campaign,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = t(viewModel, "নতুন আপডেট পেতে সরাসরি আমাদের সাথে হোয়াটসঅ্যাপে যোগাযোগ করতে এখানে চাপুন", "Click here to contact us directly on WhatsApp to get new updates"),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
@@ -625,7 +621,7 @@ fun ProfileScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
@@ -640,14 +636,14 @@ fun ProfileScreen(
                         ) {
                             Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
-                                text = t(viewModel, "অ্যাপের বিবরণ", "App Description"),
+                                text = t(viewModel, "অ্যাপ ইনফো", "App Info"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
-                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
                         Text(
                             text = t(viewModel, "অ্যাপের নাম: ডিস্ট্রো-বুক (Distro-Book)", "App Name: Distro-Book"),
@@ -657,15 +653,6 @@ fun ProfileScreen(
                         )
                         Text(
                             text = t(viewModel, "সংস্করণ: ১.০.৪ (v1.0.4)", "Version: 1.0.4 (v1.0.4)"),
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = t(
-                                viewModel,
-                                "উদ্দেশ্য: দোকান সরবরাহ ও ডিস্ট্রিবিউশন হিসাব রক্ষণাবেক্ষণ এবং সেলস ট্র্যাকিং ডায়েরি।",
-                                "Purpose: Keeping track of store supply, distribution accounts, and sales tracking diary."
-                            ),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

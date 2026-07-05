@@ -31,6 +31,11 @@ import com.example.data.Shop
 import com.example.ui.t
 import com.example.ui.tNonCompose
 import com.example.ui.viewmodel.AppViewModel
+import android.net.Uri
+import java.io.File
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +52,10 @@ fun CreateOrderScreen(
     var selectedShop by remember { mutableStateOf<Shop?>(null) }
     var shopDropdownExpanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    
+    var showShopSelectionDialog by remember { mutableStateOf(false) }
+    var shopSearchQuery by remember { mutableStateOf("") }
+    var showAddShopQuickDialog by remember { mutableStateOf(false) }
     
     // Map of ProductId -> Selected Quantity
     val selectedQuantities = remember { mutableStateMapOf<Int, Int>() }
@@ -112,50 +121,98 @@ fun CreateOrderScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                ExposedDropdownMenuBox(
-                    expanded = shopDropdownExpanded,
-                    onExpandedChange = { shopDropdownExpanded = !shopDropdownExpanded },
-                    modifier = Modifier.fillMaxWidth().testTag("shop_dropdown_box")
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showShopSelectionDialog = true }
+                        .testTag("shop_selection_card"),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                 ) {
-                    OutlinedTextField(
-                        readOnly = true,
-                        value = selectedShop?.name ?: (if (isEnglish) "Select shop..." else "দোকান সিলেক্ট করুন..."),
-                        onValueChange = {},
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = shopDropdownExpanded) },
-                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor()
-                            .testTag("shop_dropdown_trigger"),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    
-                    ExposedDropdownMenu(
-                        expanded = shopDropdownExpanded,
-                        onDismissRequest = { shopDropdownExpanded = false }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (shops.isEmpty()) {
-                            DropdownMenuItem(
-                                text = { Text(if (isEnglish) "No shops found! Please add a shop first." else "কোনো দোকান পাওয়া যায়নি! প্রথমে দোকান যোগ করুন।") },
-                                onClick = { shopDropdownExpanded = false }
-                            )
-                        } else {
-                            shops.forEach { shop ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text(shop.name, fontWeight = FontWeight.Bold)
-                                            if (shop.address.isNotBlank()) {
-                                                Text(shop.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-                                            }
-                                        }
-                                    },
-                                    onClick = {
-                                        selectedShop = shop
-                                        shopDropdownExpanded = false
-                                    }
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val imageUri = selectedShop?.imageUri
+                            if (!imageUri.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = imageUri,
+                                    contentDescription = "Shop Image",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Outlined.Storefront,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(28.dp)
                                 )
                             }
+                        }
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            if (selectedShop != null) {
+                                Text(
+                                    text = selectedShop!!.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                if (selectedShop!!.ownerName.isNotBlank()) {
+                                    Text(
+                                        text = if (isEnglish) "Owner: ${selectedShop!!.ownerName}" else "মালিক: ${selectedShop!!.ownerName}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (selectedShop!!.address.isNotBlank()) {
+                                    Text(
+                                        text = selectedShop!!.address,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    text = if (isEnglish) "No Shop Selected" else "কোনো দোকান নির্বাচন করা হয়নি",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = if (isEnglish) "Tap to select or add a new shop" else "দোকান সিলেক্ট বা নতুন যোগ করতে ট্যাপ করুন",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+                        
+                        IconButton(
+                            onClick = { showShopSelectionDialog = true },
+                            modifier = Modifier.testTag("shop_change_button")
+                        ) {
+                            Icon(
+                                imageVector = if (selectedShop != null) Icons.Default.Edit else Icons.Default.Add,
+                                contentDescription = "Edit Shop Selection",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
@@ -740,6 +797,344 @@ fun CreateOrderScreen(
                     onClick = { showReviewDialog = false }
                 ) {
                     Text(if (isEnglish) "Edit" else "সম্পাদনা করুন")
+                }
+            }
+        )
+    }
+
+    if (showShopSelectionDialog) {
+        AlertDialog(
+            onDismissRequest = { showShopSelectionDialog = false },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isEnglish) "Select Shop / Buyer" else "দোকান বা ক্রেতা সিলেক্ট করুন",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(
+                        onClick = {
+                            showShopSelectionDialog = false
+                            showAddShopQuickDialog = true
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add New Shop",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Search bar
+                    OutlinedTextField(
+                        value = shopSearchQuery,
+                        onValueChange = { shopSearchQuery = it },
+                        placeholder = { Text(if (isEnglish) "Search shop..." else "দোকান খুঁজুন...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (shopSearchQuery.isNotEmpty()) {
+                                IconButton(onClick = { shopSearchQuery = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = null)
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    val filteredShops = remember(shops, shopSearchQuery) {
+                        if (shopSearchQuery.isBlank()) {
+                            shops
+                        } else {
+                            shops.filter {
+                                it.name.contains(shopSearchQuery, ignoreCase = true) ||
+                                        it.ownerName.contains(shopSearchQuery, ignoreCase = true) ||
+                                        it.phone.contains(shopSearchQuery, ignoreCase = true)
+                            }
+                        }
+                    }
+
+                    if (filteredShops.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (isEnglish) "No shops found!" else "কোনো দোকান পাওয়া যায়নি!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(filteredShops) { shop ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedShop = shop
+                                            showShopSelectionDialog = false
+                                        },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (selectedShop?.id == shop.id) {
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                                        } else {
+                                            MaterialTheme.colorScheme.surface
+                                        }
+                                    ),
+                                    border = BorderStroke(
+                                        width = 1.dp,
+                                        color = if (selectedShop?.id == shop.id) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                        }
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(MaterialTheme.colorScheme.secondaryContainer),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            if (!shop.imageUri.isNullOrBlank()) {
+                                                AsyncImage(
+                                                    model = shop.imageUri,
+                                                    contentDescription = "Shop Image",
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Default.Store,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.width(12.dp))
+
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = shop.name,
+                                                fontWeight = FontWeight.Bold,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                            if (shop.ownerName.isNotBlank() || shop.phone.isNotBlank()) {
+                                                val ownerText = listOfNotNull(
+                                                    shop.ownerName.takeIf { it.isNotBlank() },
+                                                    shop.phone.takeIf { it.isNotBlank() }
+                                                ).joinToString(" • ")
+                                                Text(
+                                                    text = ownerText,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showShopSelectionDialog = false }
+                ) {
+                    Text(if (isEnglish) "Close" else "বন্ধ করুন")
+                }
+            }
+        )
+    }
+
+    if (showAddShopQuickDialog) {
+        var newShopName by remember { mutableStateOf("") }
+        var newShopOwner by remember { mutableStateOf("") }
+        var newShopPhone by remember { mutableStateOf("") }
+        var newShopAddress by remember { mutableStateOf("") }
+        var newShopImageUri by remember { mutableStateOf<String?>(null) }
+        var isFormError by remember { mutableStateOf(false) }
+
+        val imagePickerLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent()
+        ) { uri: Uri? ->
+            if (uri != null) {
+                val resolver = context.contentResolver
+                try {
+                    resolver.openInputStream(uri)?.use { inputStream ->
+                        val filename = "shop_${System.currentTimeMillis()}.jpg"
+                        val file = File(context.filesDir, filename)
+                        file.outputStream().use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                        newShopImageUri = file.absolutePath
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { showAddShopQuickDialog = false },
+            title = {
+                Text(
+                    text = if (isEnglish) "Quick Add Shop" else "দ্রুত দোকান যোগ করুন",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (!newShopImageUri.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = newShopImageUri,
+                                    contentDescription = "Shop Photo",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+
+                        Column {
+                            Button(
+                                onClick = { imagePickerLauncher.launch("image/*") },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            ) {
+                                Text(text = if (isEnglish) "Select Photo" else "ছবি যুক্ত করুন", fontSize = 11.sp)
+                            }
+                            if (!newShopImageUri.isNullOrBlank()) {
+                                Text(
+                                    text = if (isEnglish) "Remove" else "বাদ দিন",
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier
+                                        .clickable { newShopImageUri = null }
+                                        .padding(vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = newShopName,
+                        onValueChange = { newShopName = it; isFormError = false },
+                        label = { Text(if (isEnglish) "Shop Name *" else "দোকানের নাম *") },
+                        isError = isFormError,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = newShopOwner,
+                        onValueChange = { newShopOwner = it },
+                        label = { Text(if (isEnglish) "Owner Name" else "মালিকের নাম") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = newShopPhone,
+                        onValueChange = { newShopPhone = it },
+                        label = { Text(if (isEnglish) "Phone Number" else "ফোন নম্বর") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = newShopAddress,
+                        onValueChange = { newShopAddress = it },
+                        label = { Text(if (isEnglish) "Address" else "ঠিকানা") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newShopName.isBlank()) {
+                            isFormError = true
+                        } else {
+                            viewModel.addShop(
+                                name = newShopName,
+                                ownerName = newShopOwner,
+                                phone = newShopPhone,
+                                address = newShopAddress,
+                                imageUri = newShopImageUri
+                            )
+                            Toast.makeText(context, if (isEnglish) "Shop added!" else "দোকান যুক্ত হয়েছে!", Toast.LENGTH_SHORT).show()
+                            showAddShopQuickDialog = false
+                            showShopSelectionDialog = true
+                        }
+                    }
+                ) {
+                    Text(if (isEnglish) "Add Shop" else "দোকান যোগ করুন")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showAddShopQuickDialog = false
+                        showShopSelectionDialog = true
+                    }
+                ) {
+                    Text(if (isEnglish) "Cancel" else "বাতিল")
                 }
             }
         )

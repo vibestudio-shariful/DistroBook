@@ -49,7 +49,8 @@ fun DashboardScreen(
     onManageProductsClick: () -> Unit,
     onManageShopsClick: () -> Unit,
     onOrderClick: (Order) -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onNavigateToHistory: () -> Unit
 ) {
     val stats by viewModel.stats.collectAsState()
     val recentOrders by viewModel.dashboardOrders.collectAsState()
@@ -344,7 +345,12 @@ fun DashboardScreen(
         item {
             val isDarkMode by viewModel.isDarkMode.collectAsState()
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        viewModel.historySelectedTab.value = 0
+                        onNavigateToHistory()
+                    },
                 shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -454,7 +460,10 @@ fun DashboardScreen(
                     iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     modifier = Modifier.weight(1.0f).testTag("action_manage_products"),
-                    onClick = onManageProductsClick
+                    onClick = {
+                        viewModel.setShowOnlyLowStockInProducts(false)
+                        onManageProductsClick()
+                    }
                 )
                 QuickActionButton(
                     icon = Icons.Outlined.Storefront,
@@ -487,7 +496,11 @@ fun DashboardScreen(
                     value = formattedDue,
                     icon = Icons.Outlined.AccountBalanceWallet,
                     containerColor = dueBg,
-                    contentColor = dueColor
+                    contentColor = dueColor,
+                    onClick = {
+                        viewModel.historySelectedTab.value = 1
+                        onNavigateToHistory()
+                    }
                 )
 
                 Row(
@@ -502,7 +515,11 @@ fun DashboardScreen(
                         icon = Icons.Outlined.CheckCircle,
                         containerColor = collectedBg,
                         contentColor = collectedColor,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            viewModel.historySelectedTab.value = 2
+                            onNavigateToHistory()
+                        }
                     )
                     
                     val warningBg = if (stats.lowStockCount > 0) {
@@ -521,7 +538,11 @@ fun DashboardScreen(
                         icon = Icons.Outlined.ProductionQuantityLimits,
                         containerColor = warningBg,
                         contentColor = warningColor,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            viewModel.setShowOnlyLowStockInProducts(true)
+                            onManageProductsClick()
+                        }
                     )
                 }
             }
@@ -655,10 +676,13 @@ fun MetricCard(
     icon: ImageVector,
     containerColor: Color,
     contentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = containerColor,

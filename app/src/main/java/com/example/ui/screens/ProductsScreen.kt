@@ -35,18 +35,25 @@ fun ProductsScreen(
 ) {
     val products by viewModel.products.collectAsState()
     val isEnglish by viewModel.isEnglish.collectAsState()
+    val showOnlyLowStock by viewModel.showOnlyLowStockInProducts.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     
     var showAddEditDialog by remember { mutableStateOf(false) }
     var selectedProductForEdit by remember { mutableStateOf<Product?>(null) }
     var showDeleteConfirmation by remember { mutableStateOf<Product?>(null) }
 
-    val filteredProducts = remember(products, searchQuery) {
-        if (searchQuery.isBlank()) {
+    val filteredProducts = remember(products, searchQuery, showOnlyLowStock) {
+        var list = if (searchQuery.isBlank()) {
             products
         } else {
             products.filter { it.name.contains(searchQuery, ignoreCase = true) }
         }
+        
+        if (showOnlyLowStock) {
+            list = list.filter { it.stock <= 5 }
+        }
+        
+        list.sortedWith(compareBy<Product> { it.stock > 5 }.thenBy { it.stock }.thenBy { it.name })
     }
 
     Box(
@@ -81,7 +88,42 @@ fun ProductsScreen(
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Filter Chips Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = showOnlyLowStock,
+                    onClick = { viewModel.setShowOnlyLowStockInProducts(!showOnlyLowStock) },
+                    label = {
+                        Text(
+                            text = if (isEnglish) "Only Low Stock (≤ 5)" else "শুধু লো স্টক (≤ ৫)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    leadingIcon = {
+                        if (showOnlyLowStock) {
+                            Icon(
+                                imageVector = Icons.Default.FilterList,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.errorContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onErrorContainer,
+                        selectedLeadingIconColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Products Header
             Row(

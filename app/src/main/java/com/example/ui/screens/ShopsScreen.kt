@@ -2,9 +2,12 @@ package com.example.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -28,11 +31,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.data.Order
 import com.example.data.Shop
 import com.example.ui.viewmodel.AppViewModel
 import com.example.ui.t
 import com.example.ui.tNonCompose
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -195,16 +200,17 @@ fun ShopsScreen(
             shop = selectedShopForEdit,
             isEnglish = isEnglish,
             onDismiss = { showAddEditDialog = false },
-            onConfirm = { name, ownerName, phone, address ->
+            onConfirm = { name, ownerName, phone, address, imageUri ->
                 if (selectedShopForEdit == null) {
-                    viewModel.addShop(name, ownerName, phone, address)
+                    viewModel.addShop(name, ownerName, phone, address, imageUri)
                 } else {
                     viewModel.updateShop(
                         selectedShopForEdit!!.copy(
                             name = name,
                             ownerName = ownerName,
                             phone = phone,
-                            address = address
+                            address = address,
+                            imageUri = imageUri
                         )
                     )
                 }
@@ -246,6 +252,18 @@ fun ShopsScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                     ) {
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (!shop.imageUri.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = shop.imageUri,
+                                    contentDescription = "Shop Image",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(140.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
                             if (shop.ownerName.isNotBlank()) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Icon(Icons.Outlined.Person, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
@@ -404,22 +422,53 @@ fun ShopItemRow(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = shop.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (shop.ownerName.isNotBlank()) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (!shop.imageUri.isNullOrBlank()) {
+                            AsyncImage(
+                                model = shop.imageUri,
+                                contentDescription = "Shop Image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Outlined.Storefront,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
                         Text(
-                            text = if (isEnglish) "Owner: ${shop.ownerName}" else "মালিক: ${shop.ownerName}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = shop.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
+                        if (shop.ownerName.isNotBlank()) {
+                            Text(
+                                text = if (isEnglish) "Owner: ${shop.ownerName}" else "মালিক: ${shop.ownerName}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
                 
@@ -506,14 +555,27 @@ fun AddEditShopDialog(
     shop: Shop?,
     isEnglish: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String) -> Unit
+    onConfirm: (String, String, String, String, String?) -> Unit
 ) {
     var name by remember { mutableStateOf(shop?.name ?: "") }
     var ownerName by remember { mutableStateOf(shop?.ownerName ?: "") }
     var phone by remember { mutableStateOf(shop?.phone ?: "") }
     var address by remember { mutableStateOf(shop?.address ?: "") }
+    var imageUri by remember { mutableStateOf(shop?.imageUri) }
 
     var isError by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val path = saveShopImageToInternalStorage(context, uri)
+            if (path != null) {
+                imageUri = path
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -531,6 +593,61 @@ fun AddEditShopDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
+                // Image selection slot
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (!imageUri.isNullOrBlank()) {
+                            AsyncImage(
+                                model = imageUri,
+                                contentDescription = "Shop Photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Outlined.AddAPhoto,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    }
+
+                    Column {
+                        Button(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Text(text = if (isEnglish) "Select Photo" else "ছবি যুক্ত করুন", fontSize = 12.sp)
+                        }
+                        if (!imageUri.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isEnglish) "Remove Photo" else "ছবিটি বাদ দিন",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 11.sp,
+                                modifier = Modifier
+                                    .clickable { imageUri = null }
+                                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -583,7 +700,7 @@ fun AddEditShopDialog(
                     if (name.isBlank()) {
                         isError = true
                     } else {
-                        onConfirm(name, ownerName, phone, address)
+                        onConfirm(name, ownerName, phone, address, imageUri)
                     }
                 },
                 modifier = Modifier.testTag("shop_dialog_confirm")
@@ -597,4 +714,21 @@ fun AddEditShopDialog(
             }
         }
     )
+}
+
+private fun saveShopImageToInternalStorage(context: android.content.Context, uri: Uri): String? {
+    return try {
+        val resolver = context.contentResolver
+        resolver.openInputStream(uri)?.use { inputStream ->
+            val filename = "shop_${System.currentTimeMillis()}.jpg"
+            val file = File(context.filesDir, filename)
+            file.outputStream().use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+            file.absolutePath
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
 }

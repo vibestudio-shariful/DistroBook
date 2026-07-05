@@ -19,7 +19,8 @@ data class Shop(
     val name: String,
     val ownerName: String = "",
     val phone: String = "",
-    val address: String = ""
+    val address: String = "",
+    val imageUri: String? = null
 )
 
 @JsonClass(generateAdapter = true)

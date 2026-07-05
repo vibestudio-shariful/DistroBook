@@ -59,52 +59,75 @@ fun MainAppScreen() {
   Scaffold(
     modifier = Modifier.fillMaxSize(),
     topBar = {
-      if (currentRoute != "profile") {
-        TopAppBar(
-          title = {
-            Text(
-              text = when (currentRoute) {
-                "dashboard" -> if (isEnglish) "Dashboard" else "ড্যাশবোর্ড"
-                "create_order" -> if (isEnglish) "Create Bill" else "নতুন মেমো / বিল তৈরি"
-                "history" -> if (isEnglish) "Memo History" else "মেমো / বিলের তালিকা"
-                "products" -> if (isEnglish) "Products & Stock" else "প্রোডাক্ট ও স্টক"
-                "shops" -> if (isEnglish) "Shops & Dues" else "দোকান ও বকেয়া"
-                else -> if (isEnglish) "Shop Supply" else "দোকান সাপ্লাই"
-              },
-              fontWeight = FontWeight.Bold,
-              fontSize = 20.sp
-            )
-          },
-          actions = {
-            // Language switch button
-            IconButton(
-              onClick = { viewModel.setLanguage(!isEnglish) },
-              modifier = Modifier.testTag("action_toggle_language")
-            ) {
-              Icon(
-                imageVector = Icons.Default.Translate,
-                contentDescription = if (isEnglish) "Switch to Bangla" else "ইংরেজিতে পরিবর্তন করুন",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-              )
-            }
-            // Theme toggle button
-            IconButton(
-              onClick = { viewModel.setDarkMode(!isDarkMode) },
-              modifier = Modifier.testTag("action_toggle_theme")
-            ) {
-              Icon(
-                imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
-                contentDescription = if (isEnglish) "Toggle Theme" else "থিম পরিবর্তন করুন",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-              )
-            }
-          },
-          colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+      TopAppBar(
+        title = {
+          Text(
+            text = when (currentRoute) {
+              "dashboard" -> if (isEnglish) "Dashboard" else "ড্যাশবোর্ড"
+              "create_order" -> if (isEnglish) "Create Bill" else "নতুন মেমো / বিল তৈরি"
+              "history" -> if (isEnglish) "Memo History" else "মেমো / বিলের তালিকা"
+              "products" -> if (isEnglish) "Products & Stock" else "প্রোডাক্ট ও স্টক"
+              "shops" -> if (isEnglish) "Shops & Dues" else "দোকান ও বকেয়া"
+              "profile" -> if (isEnglish) "Profile & Settings" else "প্রোফাইল ও সেটিংস"
+              else -> if (isEnglish) "Shop Supply" else "দোকান সাপ্লাই"
+            },
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp
           )
+        },
+        navigationIcon = {
+          if (currentRoute == "profile") {
+            IconButton(onClick = { navController.popBackStack() }) {
+              Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = if (isEnglish) "Back" else "ফিরে যান",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+              )
+            }
+          }
+        },
+        actions = {
+          // Language switch button
+          IconButton(
+            onClick = { viewModel.setLanguage(!isEnglish) },
+            modifier = Modifier.testTag("action_toggle_language")
+          ) {
+            Icon(
+              imageVector = Icons.Default.Translate,
+              contentDescription = if (isEnglish) "Switch to Bangla" else "ইংরেজিতে পরিবর্তন করুন",
+              tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+          }
+          // Theme toggle button
+          IconButton(
+            onClick = { viewModel.setDarkMode(!isDarkMode) },
+            modifier = Modifier.testTag("action_toggle_theme")
+          ) {
+            Icon(
+              imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+              contentDescription = if (isEnglish) "Toggle Theme" else "থিম পরিবর্তন করুন",
+              tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+          }
+          // Settings button (only if not on profile screen)
+          if (currentRoute != "profile") {
+            IconButton(
+              onClick = { navController.navigate("profile") },
+              modifier = Modifier.testTag("action_go_to_profile")
+            ) {
+              Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = if (isEnglish) "Settings" else "সেটিংস",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+              )
+            }
+          }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+          containerColor = MaterialTheme.colorScheme.primaryContainer,
+          titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
         )
-      }
+      )
     },
     bottomBar = {
       NavigationBar(
@@ -169,7 +192,8 @@ fun MainAppScreen() {
           onOrderClick = { order ->
             navController.navigate("history")
           },
-          onProfileClick = { navController.navigate("profile") }
+          onProfileClick = { navController.navigate("profile") },
+          onNavigateToHistory = { navController.navigate("history") }
         )
       }
       composable("create_order") {

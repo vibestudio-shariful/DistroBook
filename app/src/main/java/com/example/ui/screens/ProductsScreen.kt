@@ -226,16 +226,17 @@ fun ProductsScreen(
             product = selectedProductForEdit,
             isEnglish = isEnglish,
             onDismiss = { showAddEditDialog = false },
-            onConfirm = { name, price, stock, description ->
+            onConfirm = { name, price, stock, description, unit ->
                 if (selectedProductForEdit == null) {
-                    viewModel.addProduct(name, price, stock, description)
+                    viewModel.addProduct(name, price, stock, description, unit)
                 } else {
                     viewModel.updateProduct(
                         selectedProductForEdit!!.copy(
                             name = name,
                             price = price,
                             stock = stock,
-                            description = description
+                            description = description,
+                            unit = unit
                         )
                     )
                 }
@@ -412,17 +413,22 @@ fun ProductItemRow(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditProductDialog(
     product: Product?,
     isEnglish: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, Double, Int, String) -> Unit
+    onConfirm: (String, Double, Int, String, String) -> Unit
 ) {
     var name by remember { mutableStateOf(product?.name ?: "") }
     var priceStr by remember { mutableStateOf(product?.price?.let { if (it == 0.0) "" else it.toString() } ?: "") }
     var stockStr by remember { mutableStateOf(product?.stock?.let { if (it == 0) "" else it.toString() } ?: "") }
     var description by remember { mutableStateOf(product?.description ?: "") }
+    
+    val units = listOf("Pcs", "Packet", "Sack", "Kg", "Gram")
+    var selectedUnit by remember { mutableStateOf(product?.unit ?: units[0]) }
+    var expanded by remember { mutableStateOf(false) }
 
     var isError by remember { mutableStateOf(false) }
 
@@ -446,7 +452,6 @@ fun AddEditProductDialog(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text(if (isEnglish) "Product Name *" else "প্রোডাক্টের নাম *") },
-                    placeholder = { Text(if (isEnglish) "e.g. Miniket Rice 25kg" else "যেমন- মিনিকেট চাল ২৫ কেজি") },
                     modifier = Modifier.fillMaxWidth().testTag("product_name_input"),
                     singleLine = true
                 )
@@ -455,27 +460,53 @@ fun AddEditProductDialog(
                     value = priceStr,
                     onValueChange = { priceStr = it },
                     label = { Text(if (isEnglish) "Selling Price (TK) *" else "বিক্রয় মূল্য (টাকা) *") },
-                    placeholder = { Text(if (isEnglish) "e.g. 1350.00" else "যেমন- ১৩৫০.০০") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth().testTag("product_price_input"),
                     singleLine = true
                 )
 
-                OutlinedTextField(
-                    value = stockStr,
-                    onValueChange = { stockStr = it },
-                    label = { Text(if (isEnglish) "Current Stock (pcs) *" else "বর্তমান স্টক (টি) *") },
-                    placeholder = { Text(if (isEnglish) "e.g. 50" else "যেমন- ৫০") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth().testTag("product_stock_input"),
-                    singleLine = true
-                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = stockStr,
+                        onValueChange = { stockStr = it },
+                        label = { Text(if (isEnglish) "Stock *" else "স্টক *") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f).testTag("product_stock_input"),
+                        singleLine = true
+                    )
+                    
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = selectedUnit,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(if (isEnglish) "Unit" else "একক") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { expanded = true },
+                            colors = OutlinedTextFieldDefaults.colors()
+                        )
+                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            units.forEach { unit ->
+                                DropdownMenuItem(
+                                    text = { Text(unit) },
+                                    onClick = {
+                                        selectedUnit = unit
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
 
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(if (isEnglish) "Product Description (Optional)" else "প্রোডাক্টের বিবরণ (ঐচ্ছিক)") },
-                    placeholder = { Text(if (isEnglish) "e.g. 50kg bag" else "যেমন- ৫০ কেজির বস্তা") },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3
                 )
@@ -497,7 +528,7 @@ fun AddEditProductDialog(
                     if (name.isBlank() || parsedPrice <= 0 || parsedStock < 0) {
                         isError = true
                     } else {
-                        onConfirm(name, parsedPrice, parsedStock, description)
+                        onConfirm(name, parsedPrice, parsedStock, description, selectedUnit)
                     }
                 },
                 modifier = Modifier.testTag("product_dialog_confirm")

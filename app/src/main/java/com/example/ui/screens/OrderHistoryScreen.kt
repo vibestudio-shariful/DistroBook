@@ -8,6 +8,8 @@ import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -59,10 +61,11 @@ fun OrderHistoryScreen(
     val selectedTab by viewModel.historySelectedTab.collectAsState()
     var historyFilter by remember { mutableStateOf<ReportFilter>(ReportFilter.AllTime) }
     
+    var orderToExport by remember { mutableStateOf<Order?>(null) }
     var selectedOrderDetails by remember { mutableStateOf<Order?>(null) }
     var showDeleteConfirmation by remember { mutableStateOf<Order?>(null) }
     var showPaymentUpdateDialog by remember { mutableStateOf<Order?>(null) }
-
+    
     val filteredOrders = remember(orders, searchQuery, selectedTab, historyFilter) {
         orders.filter { order ->
             val matchQuery = order.shopName.contains(searchQuery, ignoreCase = true) || order.remarks.contains(searchQuery, ignoreCase = true)
@@ -78,6 +81,28 @@ fun OrderHistoryScreen(
                 is ReportFilter.SpecificMonth -> viewModel.isSameMonth(order.timestamp, filter.year, filter.month)
             }
             matchQuery && matchStatus && matchDate
+        }
+    }
+
+    val pdfLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/pdf")
+    ) { uri: Uri? ->
+        uri?.let {
+            val order = orderToExport
+            try {
+                val pdfDoc = if (order != null) {
+                    generateInvoicePdf(order, businessNameVal, isEnglish)
+                } else {
+                    generateReportPdf(filteredOrders, businessNameVal, isEnglish)
+                }
+                context.contentResolver.openOutputStream(it)?.use { fos ->
+                    pdfDoc.writeTo(fos)
+                }
+                pdfDoc.close()
+                Toast.makeText(context, if (isEnglish) "PDF saved successfully" else "পিডিএফ সংরক্ষণ করা হয়েছে", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -332,6 +357,21 @@ fun OrderHistoryScreen(
                 }
             }
         }
+        // Floating Action Button to Print Report
+        FloatingActionButton(
+            onClick = {
+                // Generate Report PDF
+                orderToExport = null // Indicate it's a report
+                pdfLauncher.launch("Report_${System.currentTimeMillis()}.pdf")
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp),
+            containerColor = MaterialTheme.colorScheme.tertiary,
+            contentColor = MaterialTheme.colorScheme.onTertiary
+        ) {
+            Icon(Icons.Outlined.Print, contentDescription = "Print Report")
+        }
     }
 
     // Bill Invoice Receipt Dialog
@@ -443,7 +483,8 @@ fun OrderHistoryScreen(
 
                     Button(
                         onClick = {
-                            exportInvoiceToPdf(context, order, businessNameVal, isEnglish)
+                            orderToExport = order
+                            pdfLauncher.launch("Invoice_${order.id}_${System.currentTimeMillis()}.pdf")
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -592,153 +633,184 @@ fun OrderHistoryScreen(
     }
 }
 
-private fun exportInvoiceToPdf(context: android.content.Context, order: Order, businessName: String, isEnglish: Boolean) {
-    try {
-        val pdfDocument = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-        val page = pdfDocument.startPage(pageInfo)
-        val canvas: Canvas = page.canvas
 
-        val paint = Paint()
-        val textPaint = Paint().apply {
-            color = android.graphics.Color.BLACK
-            textSize = 12f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-        }
-        val headerPaint = Paint().apply {
-            color = android.graphics.Color.BLACK
-            textSize = 20f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        }
-        val boldPaint = Paint().apply {
-            color = android.graphics.Color.BLACK
-            textSize = 12f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        }
 
-        // 1. Draw Business Name Header
-        canvas.drawText(businessName, 40f, 60f, headerPaint)
-        
-        textPaint.textSize = 10f
-        textPaint.color = android.graphics.Color.GRAY
-        val dateStr = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(order.timestamp))
-        val subtitle = if (isEnglish) "Tax Invoice / Billing Receipt" else "ট্যাক্স ইনভয়েস / বিক্রয় রশিদ"
-        canvas.drawText(subtitle, 40f, 80f, textPaint)
-        
-        paint.color = android.graphics.Color.LTGRAY
-        paint.strokeWidth = 1f
-        canvas.drawLine(40f, 95f, 555f, 95f, paint)
+private fun generateInvoicePdf(order: Order, businessName: String, isEnglish: Boolean): PdfDocument {
+    val pdfDocument = PdfDocument()
+    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+    val page = pdfDocument.startPage(pageInfo)
+    val canvas: Canvas = page.canvas
 
-        // 2. Metadata Information
-        textPaint.color = android.graphics.Color.BLACK
-        textPaint.textSize = 11f
-        
-        val billToLabel = if (isEnglish) "Bill To (Shop):" else "ক্রেতা (দোকান):"
-        canvas.drawText(billToLabel, 40f, 120f, boldPaint)
-        canvas.drawText(order.shopName, 40f, 138f, textPaint)
-        
-        val invoiceNoLabel = if (isEnglish) "Invoice No: #${order.id}" else "মেমো নং: #${order.id}"
-        val dateLabel = if (isEnglish) "Date: $dateStr" else "তারিখ: $dateStr"
-        canvas.drawText(invoiceNoLabel, 350f, 120f, boldPaint)
-        canvas.drawText(dateLabel, 350f, 138f, textPaint)
-
-        canvas.drawLine(40f, 160f, 555f, 160f, paint)
-
-        // 3. Grid Table of Items
-        var y = 185f
-        val itemHeader = if (isEnglish) "Item Name" else "পণ্য"
-        val qtyHeader = if (isEnglish) "Qty" else "পরিমাণ"
-        val rateHeader = if (isEnglish) "Rate" else "দর"
-        val totalHeader = if (isEnglish) "Total" else "মোট"
-        
-        canvas.drawText(itemHeader, 40f, y, boldPaint)
-        canvas.drawText(qtyHeader, 320f, y, boldPaint)
-        canvas.drawText(rateHeader, 400f, y, boldPaint)
-        canvas.drawText(totalHeader, 480f, y, boldPaint)
-
-        canvas.drawLine(40f, y + 8f, 555f, y + 8f, paint)
-        y += 28f
-
-        for (item in order.items) {
-            canvas.drawText(item.productName, 40f, y, textPaint)
-            canvas.drawText("${item.quantity}", 320f, y, textPaint)
-            canvas.drawText(String.format("৳%,.2f", item.price), 400f, y, textPaint)
-            canvas.drawText(String.format("৳%,.2f", item.totalLinePrice), 480f, y, textPaint)
-            
-            y += 20f
-        }
-
-        canvas.drawLine(40f, y - 5f, 555f, y - 5f, paint)
-        y += 15f
-
-        val totalAmountStr = String.format("৳%,.2f", order.totalAmount)
-        val paidAmountStr = String.format("৳%,.2f", order.paidAmount)
-        val dueAmountStr = String.format("৳%,.2f", order.dueAmount)
-
-        val totalTxt = if (isEnglish) "Total Amount:" else "সর্বমোট মূল্য:"
-        val paidTxt = if (isEnglish) "Paid Amount:" else "পরিশোধিত:"
-        val dueTxt = if (isEnglish) "Due Amount:" else "বকেয়া:"
-
-        canvas.drawText(totalTxt, 320f, y, boldPaint)
-        canvas.drawText(totalAmountStr, 480f, y, boldPaint)
-        y += 20f
-
-        canvas.drawText(paidTxt, 320f, y, textPaint)
-        canvas.drawText(paidAmountStr, 480f, y, textPaint)
-        y += 20f
-
-        boldPaint.color = if (order.dueAmount > 0) android.graphics.Color.RED else android.graphics.Color.rgb(46, 125, 50)
-        canvas.drawText(dueTxt, 320f, y, boldPaint)
-        canvas.drawText(dueAmountStr, 480f, y, boldPaint)
-        
-        y += 40f
-        if (order.remarks.isNotBlank()) {
-            val remarksHeader = if (isEnglish) "Remarks:" else "মন্তব্য:"
-            canvas.drawText(remarksHeader, 40f, y, boldPaint)
-            canvas.drawText(order.remarks, 40f, y + 16f, textPaint)
-        }
-
-        val thankYouMsg = if (isEnglish) "Thank you for your business!" else "আমাদের সাথে ব্যবসা করার জন্য ধন্যবাদ!"
-        textPaint.color = android.graphics.Color.GRAY
-        textPaint.textSize = 10f
-        canvas.drawText(thankYouMsg, 40f, 780f, textPaint)
-
-        pdfDocument.finishPage(page)
-
-        val filename = "Invoice_Order_${order.id}_${System.currentTimeMillis()}.pdf"
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        if (!downloadsDir.exists()) {
-            downloadsDir.mkdirs()
-        }
-        var pdfFile = File(downloadsDir, filename)
-        
-        try {
-            FileOutputStream(pdfFile).use { fos ->
-                pdfDocument.writeTo(fos)
-            }
-        } catch (e: Exception) {
-            val fallbackDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-            pdfFile = File(fallbackDir, filename)
-            FileOutputStream(pdfFile).use { fos ->
-                pdfDocument.writeTo(fos)
-            }
-        }
-
-        pdfDocument.close()
-
-        val successMsg = if (isEnglish) {
-            "Invoice saved as PDF at: ${pdfFile.absolutePath}"
-        } else {
-            "পিডিএফ মেমোটি সংরক্ষণ করা হয়েছে: ${pdfFile.name}\nপাথ: ${pdfFile.absolutePath}"
-        }
-        Toast.makeText(context, successMsg, Toast.LENGTH_LONG).show()
-
-        // sharePdfFile(context, pdfFile)
-        openPdfFile(context, pdfFile)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        Toast.makeText(context, "Error saving PDF: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+    val textPaint = Paint().apply {
+        color = android.graphics.Color.BLACK
+        textSize = 12f
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
     }
+    val headerPaint = Paint().apply {
+        color = android.graphics.Color.BLACK
+        textSize = 20f
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    val boldPaint = Paint().apply {
+        color = android.graphics.Color.BLACK
+        textSize = 12f
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+
+    // 1. Draw Business Name Header
+    canvas.drawText(businessName, 40f, 60f, headerPaint)
+    
+    textPaint.textSize = 10f
+    textPaint.color = android.graphics.Color.GRAY
+    val dateStr = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(order.timestamp))
+    val subtitle = if (isEnglish) "Tax Invoice / Billing Receipt" else "ট্যাক্স ইনভয়েস / বিক্রয় রশিদ"
+    canvas.drawText(subtitle, 40f, 80f, textPaint)
+    
+    val paint = Paint().apply { color = android.graphics.Color.LTGRAY; strokeWidth = 1f }
+    canvas.drawLine(40f, 95f, 555f, 95f, paint)
+
+    // 2. Metadata Information
+    textPaint.color = android.graphics.Color.BLACK
+    textPaint.textSize = 11f
+    
+    val billToLabel = if (isEnglish) "Bill To (Shop):" else "ক্রেতা (দোকান):"
+    canvas.drawText(billToLabel, 40f, 120f, boldPaint)
+    canvas.drawText(order.shopName, 40f, 138f, textPaint)
+    
+    val invoiceNoLabel = if (isEnglish) "Invoice No: #${order.id}" else "মেমো নং: #${order.id}"
+    val dateLabel = if (isEnglish) "Date: $dateStr" else "তারিখ: $dateStr"
+    canvas.drawText(invoiceNoLabel, 350f, 120f, boldPaint)
+    canvas.drawText(dateLabel, 350f, 138f, textPaint)
+
+    canvas.drawLine(40f, 160f, 555f, 160f, paint)
+
+    // 3. Grid Table of Items
+    var y = 185f
+    val itemHeader = if (isEnglish) "Item Name" else "পণ্য"
+    val qtyHeader = if (isEnglish) "Qty" else "পরিমাণ"
+    val rateHeader = if (isEnglish) "Rate" else "দর"
+    val totalHeader = if (isEnglish) "Total" else "মোট"
+    
+    canvas.drawText(itemHeader, 40f, y, boldPaint)
+    canvas.drawText(qtyHeader, 320f, y, boldPaint)
+    canvas.drawText(rateHeader, 400f, y, boldPaint)
+    canvas.drawText(totalHeader, 480f, y, boldPaint)
+
+    canvas.drawLine(40f, y + 8f, 555f, y + 8f, paint)
+    y += 28f
+
+    for (item in order.items) {
+        canvas.drawText("${item.productName} (${item.unit})", 40f, y, textPaint)
+        canvas.drawText("${item.quantity}", 320f, y, textPaint)
+        canvas.drawText(String.format("৳%,.2f", item.price), 400f, y, textPaint)
+        canvas.drawText(String.format("৳%,.2f", item.totalLinePrice), 480f, y, textPaint)
+        
+        y += 20f
+    }
+
+    canvas.drawLine(40f, y - 5f, 555f, y - 5f, paint)
+    y += 15f
+
+    val totalAmountStr = String.format("৳%,.2f", order.totalAmount)
+    val paidAmountStr = String.format("৳%,.2f", order.paidAmount)
+    val dueAmountStr = String.format("৳%,.2f", order.dueAmount)
+
+    val totalTxt = if (isEnglish) "Total Amount:" else "সর্বমোট মূল্য:"
+    val paidTxt = if (isEnglish) "Paid Amount:" else "পরিশোধিত:"
+    val dueTxt = if (isEnglish) "Due Amount:" else "বকেয়া:"
+
+    canvas.drawText(totalTxt, 320f, y, boldPaint)
+    canvas.drawText(totalAmountStr, 480f, y, boldPaint)
+    y += 20f
+
+    canvas.drawText(paidTxt, 320f, y, textPaint)
+    canvas.drawText(paidAmountStr, 480f, y, textPaint)
+    y += 20f
+
+    boldPaint.color = if (order.dueAmount > 0) android.graphics.Color.RED else android.graphics.Color.rgb(46, 125, 50)
+    canvas.drawText(dueTxt, 320f, y, boldPaint)
+    canvas.drawText(dueAmountStr, 480f, y, boldPaint)
+    
+    y += 40f
+    if (order.remarks.isNotBlank()) {
+        val remarksHeader = if (isEnglish) "Remarks:" else "মন্তব্য:"
+        canvas.drawText(remarksHeader, 40f, y, boldPaint)
+        canvas.drawText(order.remarks, 40f, y + 16f, textPaint)
+    }
+
+    val thankYouMsg = if (isEnglish) "Thank you for your business!" else "আমাদের সাথে ব্যবসা করার জন্য ধন্যবাদ!"
+    textPaint.color = android.graphics.Color.GRAY
+    textPaint.textSize = 10f
+    canvas.drawText(thankYouMsg, 40f, 780f, textPaint)
+
+    // Footer
+    textPaint.textSize = 9f
+    textPaint.color = android.graphics.Color.DKGRAY
+    canvas.drawText("Generated by Distrobook, Contact for help: 01768899599", 40f, 820f, textPaint)
+
+    pdfDocument.finishPage(page)
+    return pdfDocument
+}
+
+private fun generateReportPdf(orders: List<Order>, businessName: String, isEnglish: Boolean): PdfDocument {
+    val pdfDocument = PdfDocument()
+    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+    val page = pdfDocument.startPage(pageInfo)
+    val canvas: Canvas = page.canvas
+
+    val textPaint = Paint().apply {
+        color = android.graphics.Color.BLACK
+        textSize = 12f
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+    }
+    val headerPaint = Paint().apply {
+        color = android.graphics.Color.BLACK
+        textSize = 20f
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    val boldPaint = Paint().apply {
+        color = android.graphics.Color.BLACK
+        textSize = 12f
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+
+    canvas.drawText("$businessName - ${if (isEnglish) "Order Report" else "অর্ডার রিপোর্ট"}", 40f, 60f, headerPaint)
+    
+    var y = 100f
+    
+    val dateHeader = if (isEnglish) "Date" else "তারিখ"
+    val shopHeader = if (isEnglish) "Shop" else "দোকান"
+    val totalHeader = if (isEnglish) "Total" else "মোট"
+    val dueHeader = if (isEnglish) "Due" else "বকেয়া"
+    
+    canvas.drawText(dateHeader, 40f, y, boldPaint)
+    canvas.drawText(shopHeader, 120f, y, boldPaint)
+    canvas.drawText(totalHeader, 400f, y, boldPaint)
+    canvas.drawText(dueHeader, 500f, y, boldPaint)
+    
+    y += 20f
+    
+    val formatter = SimpleDateFormat("dd/MM", Locale.getDefault())
+    for (order in orders) {
+        canvas.drawText(formatter.format(Date(order.timestamp)), 40f, y, textPaint)
+        canvas.drawText(order.shopName.take(15), 120f, y, textPaint)
+        canvas.drawText(String.format("৳%,.2f", order.totalAmount), 400f, y, textPaint)
+        canvas.drawText(String.format("৳%,.2f", order.dueAmount), 500f, y, textPaint)
+        
+        y += 20f
+        if (y > 780f) {
+            pdfDocument.finishPage(page)
+            break
+        }
+    }
+    
+    // Footer
+    textPaint.textSize = 9f
+    textPaint.color = android.graphics.Color.DKGRAY
+    canvas.drawText("Generated by Distrobook, Contact for help: 01768899599", 40f, 820f, textPaint)
+
+    pdfDocument.finishPage(page)
+    return pdfDocument
 }
 
 private fun openPdfFile(context: android.content.Context, file: File) {

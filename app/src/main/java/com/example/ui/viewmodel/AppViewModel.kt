@@ -305,9 +305,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     // Product actions
-    fun addProduct(name: String, price: Double, stock: Int, description: String = "") {
+    fun addProduct(name: String, price: Double, stock: Int, description: String = "", unit: String = "Pcs") {
         viewModelScope.launch {
-            repository.insertProduct(Product(name = name, price = price, stock = stock, description = description))
+            repository.insertProduct(Product(name = name, price = price, stock = stock, description = description, unit = unit))
         }
     }
 

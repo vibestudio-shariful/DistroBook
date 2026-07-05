@@ -84,7 +84,8 @@ fun CreateOrderScreen(
                 productId = product.id,
                 productName = product.name,
                 price = price,
-                quantity = qty
+                quantity = qty,
+                unit = product.unit
             )
         } else null
     }
@@ -344,7 +345,7 @@ fun CreateOrderScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        text = if (isEnglish) "Stock: ${product.stock} pcs" else "স্টক: ${product.stock} টি",
+                                        text = if (isEnglish) "Stock: ${product.stock} ${product.unit}" else "স্টক: ${product.stock} ${product.unit}",
                                         fontSize = 11.sp,
                                         color = if (product.stock == 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
                                         fontWeight = if (product.stock == 0) FontWeight.Bold else FontWeight.Normal
@@ -660,8 +661,8 @@ fun CreateOrderScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(item.productName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                                        Text("৳${String.format("%,.2f", item.price)} x ${if (isEnglish) "${item.quantity} pcs" else "${item.quantity} টি"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("${item.productName} (${item.unit})", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                        Text("৳${String.format("%,.2f", item.price)} x ${if (isEnglish) "${item.quantity} ${item.unit}" else "${item.quantity} ${item.unit}"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text((if (isEnglish) "Total: ৳" else "মোট: ৳") + String.format("%,.2f", item.totalLinePrice), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                                     }
                                     

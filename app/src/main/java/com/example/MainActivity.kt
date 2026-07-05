@@ -131,7 +131,7 @@ fun MainAppScreen() {
     },
     bottomBar = {
       NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
         tonalElevation = 8.dp,
         modifier = Modifier.testTag("bottom_nav")
       ) {

@@ -353,8 +353,8 @@ fun DashboardScreen(
                     },
                 shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
@@ -372,7 +372,7 @@ fun DashboardScreen(
                             Text(
                                 text = salesCardTitle,
                                 fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
                                 fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(4.dp))
@@ -386,13 +386,13 @@ fun DashboardScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f))
+                                .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
                                 .padding(8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.TrendingUp,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimary,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -406,26 +406,26 @@ fun DashboardScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f))
+                                .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f))
                                 .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = t(viewModel, "অর্ডার: ${recentOrders.size}টি", "Orders: ${recentOrders.size}"),
                                 fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f))
+                                .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f))
                                 .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = t(viewModel, "দোকান: ${stats.activeShops}টি", "Shops: ${stats.activeShops}"),
                                 fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -489,8 +489,8 @@ fun DashboardScreen(
             val isDarkMode by viewModel.isDarkMode.collectAsState()
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 // Large primary due card (since due is highly crucial for supplier)
-                val dueBg = if (isDarkMode) Color(0xFF8C1D18).copy(alpha = 0.2f) else Color(0xFFF9DEDC)
-                val dueColor = if (isDarkMode) Color(0xFFF9DEDC) else Color(0xFF410E0B)
+                val dueBg = if (isDarkMode) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f) else Color(0xFFF9DEDC)
+                val dueColor = if (isDarkMode) MaterialTheme.colorScheme.onErrorContainer else Color(0xFF410E0B)
                 MetricCard(
                     title = t(viewModel, "মোট বকেয়া (Due Amount)", "Total Dues"),
                     value = formattedDue,
@@ -507,8 +507,8 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    val collectedBg = if (isDarkMode) Color(0xFF1B5E20).copy(alpha = 0.2f) else Color(0xFFD2E8D1)
-                    val collectedColor = if (isDarkMode) Color(0xFFC8E6C9) else Color(0xFF0A210B)
+                    val collectedBg = if (isDarkMode) MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f) else Color(0xFFD2E8D1)
+                    val collectedColor = if (isDarkMode) MaterialTheme.colorScheme.onTertiaryContainer else Color(0xFF0A210B)
                     MetricCard(
                         title = t(viewModel, "মোট আদায়", "Total Collected"),
                         value = formattedCollected,
@@ -523,12 +523,12 @@ fun DashboardScreen(
                     )
                     
                     val warningBg = if (stats.lowStockCount > 0) {
-                        if (isDarkMode) Color(0xFFE65100).copy(alpha = 0.2f) else Color(0xFFFFF3E0)
+                        if (isDarkMode) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f) else Color(0xFFFFF3E0)
                     } else {
                         if (isDarkMode) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFECEFF1)
                     }
                     val warningColor = if (stats.lowStockCount > 0) {
-                        if (isDarkMode) Color(0xFFFFD180) else Color(0xFFE65100)
+                        if (isDarkMode) MaterialTheme.colorScheme.onSecondaryContainer else Color(0xFFE65100)
                     } else {
                         if (isDarkMode) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF42474E)
                     }

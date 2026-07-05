@@ -10,7 +10,8 @@ data class Product(
     val name: String,
     val price: Double,
     val stock: Int = 0,
-    val description: String = ""
+    val description: String = "",
+    val unit: String = "Pcs"
 )
 
 @Entity(tableName = "shops")
@@ -28,7 +29,8 @@ data class OrderItem(
     val productId: Int,
     val productName: String,
     val price: Double,
-    val quantity: Int
+    val quantity: Int,
+    val unit: String = "Pcs"
 ) {
     val totalLinePrice: Double
         get() = price * quantity

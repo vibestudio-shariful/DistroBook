@@ -96,7 +96,8 @@ fun DashboardScreen(
                     .padding(vertical = 4.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             ) {
@@ -488,63 +489,53 @@ fun DashboardScreen(
         item {
             val isDarkMode by viewModel.isDarkMode.collectAsState()
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Large primary due card (since due is highly crucial for supplier)
-                val dueBg = MaterialTheme.colorScheme.errorContainer.copy(alpha = if (isDarkMode) 0.6f else 0.3f)
-                val dueColor = if (isDarkMode) MaterialTheme.colorScheme.onErrorContainer else Color(0xFF410E0B)
                 MetricCard(
                     title = t(viewModel, "মোট বকেয়া (Due Amount)", "Total Dues"),
                     value = formattedDue,
                     icon = Icons.Outlined.AccountBalanceWallet,
-                    containerColor = dueBg,
-                    contentColor = dueColor,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
                     onClick = {
                         viewModel.historySelectedTab.value = 1
                         onNavigateToHistory()
                     }
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    val collectedBg = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = if (isDarkMode) 0.6f else 0.3f)
-                    val collectedColor = if (isDarkMode) MaterialTheme.colorScheme.onTertiaryContainer else Color(0xFF0A210B)
-                    MetricCard(
-                        title = t(viewModel, "মোট আদায়", "Total Collected"),
-                        value = formattedCollected,
-                        icon = Icons.Outlined.CheckCircle,
-                        containerColor = collectedBg,
-                        contentColor = collectedColor,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            viewModel.historySelectedTab.value = 2
-                            onNavigateToHistory()
-                        }
-                    )
-                    
-                    val warningBg = if (stats.lowStockCount > 0) {
-                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = if (isDarkMode) 0.6f else 0.3f)
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDarkMode) 0.6f else 0.3f)
+                MetricCard(
+                    title = t(viewModel, "মোট আদায়", "Total Collected"),
+                    value = formattedCollected,
+                    icon = Icons.Outlined.CheckCircle,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    onClick = {
+                        viewModel.historySelectedTab.value = 2
+                        onNavigateToHistory()
                     }
-                    val warningColor = if (stats.lowStockCount > 0) {
-                        if (isDarkMode) MaterialTheme.colorScheme.onSecondaryContainer else Color(0xFFE65100)
-                    } else {
-                        if (isDarkMode) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF42474E)
+                )
+                
+                MetricCard(
+                    title = t(viewModel, "স্টক সতর্কবার্তা", "Stock Warning"),
+                    value = t(viewModel, "${stats.lowStockCount} টি প্রোডাক্ট", "${stats.lowStockCount} Products"),
+                    icon = Icons.Outlined.ProductionQuantityLimits,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    onClick = {
+                        viewModel.setShowOnlyLowStockInProducts(true)
+                        onManageProductsClick()
                     }
-                    MetricCard(
-                        title = t(viewModel, "স্টক সতর্কবার্তা", "Stock Warning"),
-                        value = t(viewModel, "${stats.lowStockCount} টি প্রোডাক্ট", "${stats.lowStockCount} Products"),
-                        icon = Icons.Outlined.ProductionQuantityLimits,
-                        containerColor = warningBg,
-                        contentColor = warningColor,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            viewModel.setShowOnlyLowStockInProducts(true)
-                            onManageProductsClick()
-                        }
-                    )
-                }
+                )
+                
+                MetricCard(
+                    title = t(viewModel, "মেয়াদ সতর্কবার্তা", "Expiry Alert"),
+                    value = t(viewModel, "${stats.expiringSoonCount} টি প্রোডাক্ট", "${stats.expiringSoonCount} Products"),
+                    icon = Icons.Outlined.Timer,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    onClick = {
+                        // Optionally filter by expiry
+                        onManageProductsClick()
+                    }
+                )
             }
         }
 

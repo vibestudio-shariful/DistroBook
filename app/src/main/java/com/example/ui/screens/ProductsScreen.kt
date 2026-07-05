@@ -37,12 +37,13 @@ fun ProductsScreen(
     val isEnglish by viewModel.isEnglish.collectAsState()
     val showOnlyLowStock by viewModel.showOnlyLowStockInProducts.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var sortByExpiry by remember { mutableStateOf(false) }
     
     var showAddEditDialog by remember { mutableStateOf(false) }
     var selectedProductForEdit by remember { mutableStateOf<Product?>(null) }
     var showDeleteConfirmation by remember { mutableStateOf<Product?>(null) }
 
-    val filteredProducts = remember(products, searchQuery, showOnlyLowStock) {
+    val filteredProducts = remember(products, searchQuery, showOnlyLowStock, sortByExpiry) {
         var list = if (searchQuery.isBlank()) {
             products
         } else {
@@ -53,7 +54,11 @@ fun ProductsScreen(
             list = list.filter { it.stock <= 5 }
         }
         
-        list.sortedWith(compareBy<Product> { it.stock > 5 }.thenBy { it.stock }.thenBy { it.name })
+        if (sortByExpiry) {
+            list.sortedBy { it.expiryDate ?: Long.MAX_VALUE }
+        } else {
+            list.sortedWith(compareBy<Product> { it.stock > 5 }.thenBy { it.stock }.thenBy { it.name })
+        }
     }
 
     Box(
@@ -120,6 +125,27 @@ fun ProductsScreen(
                         selectedLabelColor = MaterialTheme.colorScheme.onErrorContainer,
                         selectedLeadingIconColor = MaterialTheme.colorScheme.onErrorContainer
                     )
+                )
+                
+                FilterChip(
+                    selected = sortByExpiry,
+                    onClick = { sortByExpiry = !sortByExpiry },
+                    label = {
+                        Text(
+                            text = if (isEnglish) "Sort by Expiry" else "মেয়াদ অনুসারে সাজান",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    leadingIcon = {
+                        if (sortByExpiry) {
+                            Icon(
+                                imageVector = Icons.Default.Timer,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                 )
             }
 
@@ -226,9 +252,9 @@ fun ProductsScreen(
             product = selectedProductForEdit,
             isEnglish = isEnglish,
             onDismiss = { showAddEditDialog = false },
-            onConfirm = { name, price, stock, description, unit ->
+            onConfirm = { name, price, stock, description, unit, expiryDate ->
                 if (selectedProductForEdit == null) {
-                    viewModel.addProduct(name, price, stock, description, unit)
+                    viewModel.addProduct(name, price, stock, description, unit, expiryDate)
                 } else {
                     viewModel.updateProduct(
                         selectedProductForEdit!!.copy(
@@ -236,7 +262,8 @@ fun ProductsScreen(
                             price = price,
                             stock = stock,
                             description = description,
-                            unit = unit
+                            unit = unit,
+                            expiryDate = expiryDate
                         )
                     )
                 }
@@ -383,6 +410,18 @@ fun ProductItemRow(
                             color = stockColor
                         )
                     }
+
+                    if (product.expiryDate != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val expiryDate = java.util.Date(product.expiryDate!!)
+                        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                        Text(
+                            text = if (isEnglish) "Expiry: ${dateFormat.format(expiryDate)}" else "মেয়াদ: ${dateFormat.format(expiryDate)}",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
 
                 // Quick Stock adjustment buttons
@@ -419,7 +458,7 @@ fun AddEditProductDialog(
     product: Product?,
     isEnglish: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, Double, Int, String, String) -> Unit
+    onConfirm: (String, Double, Int, String, String, Long?) -> Unit
 ) {
     var name by remember { mutableStateOf(product?.name ?: "") }
     var priceStr by remember { mutableStateOf(product?.price?.let { if (it == 0.0) "" else it.toString() } ?: "") }
@@ -428,6 +467,11 @@ fun AddEditProductDialog(
     
     val units = listOf("Pcs", "Packet", "Sack", "Kg", "Gram", "Liter", "Dozen")
     var selectedUnit by remember { mutableStateOf(product?.unit ?: units[0]) }
+    
+    // Simple date formatting: YYYY-MM-DD
+    val dateFormat = remember { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()) }
+    var expiryDateStr by remember { mutableStateOf(product?.expiryDate?.let { dateFormat.format(java.util.Date(it)) } ?: "") }
+    
     var expanded by remember { mutableStateOf(false) }
 
     var isError by remember { mutableStateOf(false) }
@@ -510,6 +554,14 @@ fun AddEditProductDialog(
                         }
                     }
                 }
+                
+                OutlinedTextField(
+                    value = expiryDateStr,
+                    onValueChange = { expiryDateStr = it },
+                    label = { Text(if (isEnglish) "Expiry Date (YYYY-MM-DD)" else "মেয়াদ শেষ হওয়ার তারিখ (YYYY-MM-DD)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
 
                 OutlinedTextField(
                     value = description,
@@ -533,10 +585,15 @@ fun AddEditProductDialog(
                 onClick = {
                     val parsedPrice = priceStr.toDoubleOrNull() ?: 0.0
                     val parsedStock = stockStr.toIntOrNull() ?: 0
-                    if (name.isBlank() || parsedPrice <= 0 || parsedStock < 0) {
+                    val parsedExpiryDate = try {
+                        if (expiryDateStr.isBlank()) null else dateFormat.parse(expiryDateStr)?.time
+                    } catch (e: Exception) {
+                        -1L // Error
+                    }
+                    if (name.isBlank() || parsedPrice <= 0 || parsedStock < 0 || (expiryDateStr.isNotBlank() && parsedExpiryDate == -1L)) {
                         isError = true
                     } else {
-                        onConfirm(name, parsedPrice, parsedStock, description, selectedUnit)
+                        onConfirm(name, parsedPrice, parsedStock, description, selectedUnit, if (parsedExpiryDate == -1L) null else parsedExpiryDate)
                     }
                 },
                 modifier = Modifier.testTag("product_dialog_confirm")

@@ -276,13 +276,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val totalDue = filteredOrders.sumOf { it.dueAmount }
         val activeShops = shopList.size
         val lowStockProducts = prodList.count { it.stock <= 5 }
+        val now = System.currentTimeMillis()
+        val expiringSoonProducts = prodList.count { it.expiryDate != null && it.expiryDate!! > now && it.expiryDate!! <= now + 7 * 24 * 60 * 60 * 1000 }
         
         DashboardStats(
             totalSales = totalSales,
             totalCollected = totalCollected,
             totalDue = totalDue,
             activeShops = activeShops,
-            lowStockCount = lowStockProducts
+            lowStockCount = lowStockProducts,
+            expiringSoonCount = expiringSoonProducts
         )
     }.stateIn(
         viewModelScope,
@@ -305,9 +308,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     // Product actions
-    fun addProduct(name: String, price: Double, stock: Int, description: String = "", unit: String = "Pcs") {
+    fun addProduct(name: String, price: Double, stock: Int, description: String = "", unit: String = "Pcs", expiryDate: Long? = null) {
         viewModelScope.launch {
-            repository.insertProduct(Product(name = name, price = price, stock = stock, description = description, unit = unit))
+            repository.insertProduct(Product(name = name, price = price, stock = stock, description = description, unit = unit, expiryDate = expiryDate))
         }
     }
 
@@ -395,5 +398,6 @@ data class DashboardStats(
     val totalCollected: Double = 0.0,
     val totalDue: Double = 0.0,
     val activeShops: Int = 0,
-    val lowStockCount: Int = 0
+    val lowStockCount: Int = 0,
+    val expiringSoonCount: Int = 0
 )

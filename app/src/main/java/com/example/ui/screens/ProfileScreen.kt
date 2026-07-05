@@ -579,6 +579,21 @@ fun ProfileScreen(
                             }
                         )
 
+                        DeveloperInfoRow(
+                            label = t(viewModel, "ইমেইল", "Email"),
+                            value = "connect.shariful@gmail.com",
+                            icon = Icons.Default.Email,
+                            isClickable = true,
+                            onClick = {
+                                try {
+                                    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:connect.shariful@gmail.com"))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, tNonCompose(isEnglish, "ইমেইল অ্যাপ খুঁজে পাওয়া যায়নি", "Email app not found"), Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
+
                         Spacer(modifier = Modifier.height(2.dp))
                         
                         Row(

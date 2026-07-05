@@ -22,39 +22,30 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # ৩. গ্রেডল সেটআপ করা (যাতে লোকাল র্যাপার বা উইন্ডোজ CRLF লাইনের কোনো সমস্যা ছাড়াই ৯.৩.১ ভার্সনে বিল্ড হতে পারে এবং র্যাপার ভ্যালিডেশন বন্ধ রাখা হয়েছে)
+      # ৩. আপনার সিক্রেট থেকে Base64 কোড নিয়ে আসল কিস্টোর (.jks) ফাইলটি তৈরি করা (গ্রেডল রান করার আগেই তৈরি করতে হবে)
+      - name: Decode Keystore File
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks
+
+      # ৪. গ্রেডল সেটআপ করা (যাতে লোকাল র্যাপার বা উইন্ডোজ CRLF লাইনের কোনো সমস্যা ছাড়াই ৯.৩.১ ভার্সনে বিল্ড হতে পারে এবং র্যাপার ভ্যালিডেশন বন্ধ রাখা হয়েছে)
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
           validate-wrappers: false
 
-      # ৪. গ্রেডল দিয়ে আনসাইনড রিলিজ এপিকে তৈরি করা (র্যাপার ছাড়াই সরাসরি গ্লোবাল গ্রেডল দিয়ে, যা ১০০% সিকিউর ও ঝামেলামুক্ত)
-      - name: Build Unsigned Release APK
+      # ৫. গ্রেডল দিয়ে সরাসরি সাইন্ড রিলিজ এপিকে তৈরি করা (র্যাপার ছাড়াই সরাসরি গ্লোবাল গ্রেডল দিয়ে এবং সিক্রেট এনভায়রনমেন্ট ভেরিয়েবল সহ)
+      - name: Build and Sign Release APK
+        env:
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: gradle assembleRelease
 
-      # ৫. আপনার সিক্রেট থেকে Base64 কোড নিয়ে আসল কিস্টোর (.jks) ফাইলটি তৈরি করা
-      - name: Decode Keystore File
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/my-release-key.jks
-
-      # ৬. তৈরি হওয়া Keystore ফাইল এবং পাসওয়ার্ড দিয়ে APK সম্পূর্ণ সাইন করা
-      - name: Sign Release APK
-        run: |
-          # গিটহাব রানারে থাকা লেটেস্ট বিল্ড-টুলস ডিরেক্টরি খুঁজে বের করা
-          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | tail -1)
-          
-          # apksigner দিয়ে সাইন করা এবং আউটপুট ফাইল তৈরি করা
-          $BUILD_TOOLS_DIR/apksigner sign --ks app/my-release-key.jks \
-            --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
-            --ks-key-alias ${{ secrets.KEY_ALIAS }} \
-            --key-pass pass:${{ secrets.KEY_PASSWORD }} \
-            --out app/build/outputs/apk/release/app-release-signed.apk \
-            app/build/outputs/apk/release/app-release-unsigned.apk
-
-      # ৭. সফলভাবে সাইন হওয়া এপিকে-টি গিটহাব অ্যাকশনের 'Artifact' হিসেবে আপলোড করা
+      # ৬. সফলভাবে সাইন হওয়া এপিকে-টি গিটহাব অ্যাকশনের 'Artifact' হিসেবে আপলোড করা
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: Signed-Release-APK
-          path: app/build/outputs/apk/release/app-release-signed.apk
+          path: app/build/outputs/apk/release/app-release.apk
+

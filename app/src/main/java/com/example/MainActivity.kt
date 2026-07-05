@@ -26,6 +26,23 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.delay
 import com.example.ui.screens.*
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.AppViewModel
@@ -37,13 +54,23 @@ class MainActivity : ComponentActivity() {
     setContent {
       val viewModel: AppViewModel = viewModel()
       val isDarkMode by viewModel.isDarkMode.collectAsState()
+      val isEnglish by viewModel.isEnglish.collectAsState()
+      var showSplashScreen by remember { mutableStateOf(true) }
 
       MyApplicationTheme(darkTheme = isDarkMode) {
         Surface(
           modifier = Modifier.fillMaxSize(),
           color = MaterialTheme.colorScheme.background
         ) {
-          MainAppScreen()
+          if (showSplashScreen) {
+            SplashScreen(
+              isDarkMode = isDarkMode,
+              isEnglish = isEnglish,
+              onTimeout = { showSplashScreen = false }
+            )
+          } else {
+            MainAppScreen()
+          }
         }
       }
     }
@@ -180,9 +207,9 @@ fun MainAppScreen() {
             },
             label = { Text(item.label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
             colors = NavigationBarItemDefaults.colors(
-              selectedIconColor = MaterialTheme.colorScheme.primary,
+              selectedIconColor = MaterialTheme.colorScheme.onPrimary,
               selectedTextColor = MaterialTheme.colorScheme.primary,
-              indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+              indicatorColor = MaterialTheme.colorScheme.primary,
               unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
               unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
@@ -246,3 +273,113 @@ data class NavigationItem(
   val selectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
   val unselectedIcon: androidx.compose.ui.graphics.vector.ImageVector
 )
+
+@Composable
+fun SplashScreen(isDarkMode: Boolean, isEnglish: Boolean, onTimeout: () -> Unit) {
+  val scale = remember { Animatable(0.6f) }
+  val alpha = remember { Animatable(0f) }
+
+  LaunchedEffect(key1 = true) {
+    launch {
+      scale.animateTo(
+        targetValue = 1f,
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+      )
+    }
+    launch {
+      alpha.animateTo(
+        targetValue = 1f,
+        animationSpec = tween(durationMillis = 1000)
+      )
+    }
+    delay(2000) // Beautiful delay
+    onTimeout()
+  }
+
+  val gradientColors = if (isDarkMode) {
+    listOf(Color(0xFF0F172A), Color(0xFF1E293B))
+  } else {
+    listOf(Color(0xFFEFF6FF), Color(0xFFDBEAFE))
+  }
+
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(Brush.verticalGradient(gradientColors)),
+    contentAlignment = Alignment.Center
+  ) {
+    Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center,
+      modifier = Modifier.padding(24.dp)
+    ) {
+      // Modern circular icon pack logo
+      Image(
+        painter = painterResource(id = R.drawable.ic_launcher_circle_logo_1783267887935),
+        contentDescription = "Logo",
+        modifier = Modifier
+          .size(130.dp)
+          .scale(scale.value)
+          .alpha(alpha.value)
+          .clip(CircleShape)
+      )
+
+      Spacer(modifier = Modifier.height(24.dp))
+
+      // App name
+      Text(
+        text = if (isEnglish) "DistroBook" else "ডিস্ট্রো-বুক",
+        fontSize = 32.sp,
+        fontWeight = FontWeight.ExtraBold,
+        color = if (isDarkMode) Color.White else Color(0xFF1E3A8A),
+        modifier = Modifier.alpha(alpha.value)
+      )
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      // Subtitle
+      Text(
+        text = if (isEnglish) "Distribution Ledger & Memo Manager" else "দোকান সাপ্লাই ও মেমো ডায়েরি",
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium,
+        color = if (isDarkMode) Color(0xFF94A3B8) else Color(0xFF475569),
+        textAlign = TextAlign.Center,
+        modifier = Modifier.alpha(alpha.value)
+      )
+
+      Spacer(modifier = Modifier.height(40.dp))
+
+      // Progress bar
+      CircularProgressIndicator(
+        color = if (isDarkMode) Color(0xFF3B82F6) else Color(0xFF2563EB),
+        strokeWidth = 3.dp,
+        modifier = Modifier
+          .size(32.dp)
+          .alpha(alpha.value)
+      )
+    }
+
+    // Bottom branding & version
+    Column(
+      modifier = Modifier
+        .align(Alignment.BottomCenter)
+        .padding(bottom = 32.dp)
+        .alpha(alpha.value),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Text(
+        text = if (isEnglish) "Version 1.1.0" else "সংস্করণ ১.১.০",
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = if (isDarkMode) Color(0xFF64748B) else Color(0xFF475569)
+      )
+      Spacer(modifier = Modifier.height(4.dp))
+      Text(
+        text = "VibeStudio",
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Bold,
+        color = if (isDarkMode) Color(0xFF3B82F6) else Color(0xFF2563EB)
+      )
+    }
+  }
+}

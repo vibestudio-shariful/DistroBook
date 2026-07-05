@@ -77,24 +77,49 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         isEnglish.value = enabled
     }
 
-    // Dedicated app storage directory in Documents for visibility
-    private val appStorageDir = File(
-        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-        "DistroBook"
-    ).apply {
-        if (!exists()) {
-            try {
-                mkdirs()
-            } catch (e: Exception) {
-                e.printStackTrace()
+    // Dedicated app storage directory
+    private val appStorageDir: File by lazy {
+        val publicDir = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+            "DistroBook"
+        )
+        try {
+            if (!publicDir.exists()) {
+                publicDir.mkdirs()
             }
+            if (publicDir.exists() && publicDir.canWrite()) {
+                publicDir
+            } else {
+                val fallbackDir = File(application.filesDir, "DistroBook")
+                if (!fallbackDir.exists()) {
+                    fallbackDir.mkdirs()
+                }
+                fallbackDir
+            }
+        } catch (e: Exception) {
+            val fallbackDir = File(application.filesDir, "DistroBook")
+            if (!fallbackDir.exists()) {
+                fallbackDir.mkdirs()
+            }
+            fallbackDir
         }
     }
 
-    private val mediaDir = File(appStorageDir, "Media").apply { if (!exists()) mkdirs() }
-    private val backupDir = File(appStorageDir, "Backups").apply { if (!exists()) mkdirs() }
+    private val mediaDir: File by lazy {
+        val dir = File(application.filesDir, "Media")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        dir
+    }
 
-    fun getMediaDir(): File = mediaDir
+    private val backupDir: File by lazy {
+        val dir = File(appStorageDir, "Backups")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        dir
+    }
 
     fun saveShopImage(context: Context, uri: Uri, onResult: (String?) -> Unit) {
         viewModelScope.launch {
@@ -115,13 +140,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Save Avatar Photo to Public Storage
+    // Save Avatar Photo to Private Storage
     fun saveUserAvatar(context: Context, uri: Uri) {
         viewModelScope.launch {
             try {
                 val contentResolver = context.contentResolver
                 contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val avatarFile = File(mediaDir, "user_avatar.jpg")
+                    val oldPath = sharedPrefs.getString("user_avatar_path", null)
+                    if (oldPath != null) {
+                        try {
+                            File(oldPath).delete()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    val avatarFile = File(mediaDir, "user_avatar_${System.currentTimeMillis()}.jpg")
                     avatarFile.outputStream().use { outputStream ->
                         inputStream.copyTo(outputStream)
                     }

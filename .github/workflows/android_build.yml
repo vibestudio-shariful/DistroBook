@@ -1,4 +1,4 @@
-name: Android Signed APK Builder new
+name: Android Signed APK Builder
 
 on:
   push:

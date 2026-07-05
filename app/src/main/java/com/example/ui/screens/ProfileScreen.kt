@@ -786,7 +786,7 @@ fun ProfileScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = t(viewModel, "সংস্করণ: ১.০.৪ (v1.0.4)", "Version: 1.0.4 (v1.0.4)"),
+                            text = t(viewModel, "সংস্করণ: ১.১.০ (v1.1.0)", "Version: 1.1.0 (v1.1.0)"),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

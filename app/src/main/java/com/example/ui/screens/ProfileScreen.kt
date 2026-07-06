@@ -69,11 +69,11 @@ fun ProfileScreen(
     val defaultAddress = t(viewModel, "আপনার ঠিকানা", "Your Address")
 
     // Form states
-    var nameInput by remember(currentUserName) { mutableStateOf(currentUserName) }
-    var businessInput by remember(currentBusinessName) { mutableStateOf(currentBusinessName) }
-    var phoneInput by remember(currentUserPhone) { mutableStateOf(currentUserPhone) }
-    var emailInput by remember(currentUserEmail) { mutableStateOf(currentUserEmail) }
-    var addressInput by remember(currentUserAddress) { mutableStateOf(currentUserAddress) }
+    var nameInput by remember(currentUserName) { mutableStateOf(if (currentUserName == "আপনার নাম" || currentUserName == "Your Name" || currentUserName == defaultName) "" else currentUserName) }
+    var businessInput by remember(currentBusinessName) { mutableStateOf(if (currentBusinessName == "আপনার প্রতিষ্ঠানের নাম" || currentBusinessName == "Your Business Name" || currentBusinessName == defaultBusiness) "" else currentBusinessName) }
+    var phoneInput by remember(currentUserPhone) { mutableStateOf(if (currentUserPhone == "০১৭xxxxxxxx" || currentUserPhone == "017xxxxxxxx" || currentUserPhone == defaultPhone) "" else currentUserPhone) }
+    var emailInput by remember(currentUserEmail) { mutableStateOf(if (currentUserEmail == "ইমেইল বা সোশ্যাল প্রোফাইল" || currentUserEmail == "Email or Social Profile" || currentUserEmail == defaultEmail) "" else currentUserEmail) }
+    var addressInput by remember(currentUserAddress) { mutableStateOf(if (currentUserAddress == "আপনার ঠিকানা" || currentUserAddress == "Your Address" || currentUserAddress == defaultAddress) "" else currentUserAddress) }
 
     // Backup & restore pending confirmation states
     var pendingLocalRestoreUri by remember { mutableStateOf<Uri?>(null) }
@@ -601,22 +601,18 @@ fun ProfileScreen(
         )
     }
 
-    Scaffold(
-        // TopAppBar is handled by MainActivity
-    ) { innerPadding ->
-        Box(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(innerPadding)
+                .testTag("profile_screen"),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .testTag("profile_screen"),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
             // Section 1: User Profile Form
             item {
                 Card(
@@ -1716,7 +1712,6 @@ fun ProfileScreen(
                                 }
                             }
 
-}
 }
 }
 }

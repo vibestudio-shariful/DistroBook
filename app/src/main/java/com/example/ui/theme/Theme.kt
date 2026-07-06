@@ -17,7 +17,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryModern,
+    primary = DarkPrimary,
     onPrimary = Color.White,
     primaryContainer = DarkPrimaryContainer,
     onPrimaryContainer = DarkOnPrimaryContainer,

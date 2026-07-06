@@ -494,10 +494,11 @@ fun DashboardScreen(
                 QuickActionButton(
                     icon = Icons.Outlined.PostAdd,
                     label = t(viewModel, "নতুন অর্ডার", "New Order"),
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    iconBgColor = MaterialTheme.colorScheme.primary,
-                    iconColor = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    iconBgColor = MaterialTheme.colorScheme.surfaceVariant,
+                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     modifier = Modifier.weight(1.0f).testTag("action_create_order"),
                     onClick = onCreateOrderClick
                 )
@@ -542,8 +543,8 @@ fun DashboardScreen(
                     title = t(viewModel, "মোট বকেয়া (Due Amount)", "Total Dues"),
                     value = formattedDue,
                     icon = Icons.Outlined.AccountBalanceWallet,
-                    containerColor = if (isDarkMode) Color(0xFF422020) else Color(0xFFFFEBEE),
-                    contentColor = if (isDarkMode) Color(0xFFFFEBEE) else Color(0xFFB71C1C),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
                     iconColor = if (isDarkMode) Color(0xFFEF5350) else Color(0xFFD32F2F),
                     isDarkMode = isDarkMode,
                     onClick = {
@@ -556,8 +557,8 @@ fun DashboardScreen(
                     title = t(viewModel, "মোট আদায়", "Total Collected"),
                     value = formattedCollected,
                     icon = Icons.Outlined.CheckCircle,
-                    containerColor = if (isDarkMode) Color(0xFF203220) else Color(0xFFE8F5E9),
-                    contentColor = if (isDarkMode) Color(0xFFE8F5E9) else Color(0xFF1B5E20),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
                     iconColor = if (isDarkMode) Color(0xFF66BB6A) else Color(0xFF388E3C),
                     isDarkMode = isDarkMode,
                     onClick = {
@@ -570,8 +571,8 @@ fun DashboardScreen(
                     title = t(viewModel, "স্টক সতর্কবার্তা", "Stock Warning"),
                     value = t(viewModel, "${stats.lowStockCount} টি প্রোডাক্ট", "${stats.lowStockCount} Products"),
                     icon = Icons.Outlined.ProductionQuantityLimits,
-                    containerColor = if (isDarkMode) Color(0xFF32281A) else Color(0xFFFFF3E0),
-                    contentColor = if (isDarkMode) Color(0xFFFFF3E0) else Color(0xFFE65100),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
                     iconColor = if (isDarkMode) Color(0xFFFFA726) else Color(0xFFF57C00),
                     isDarkMode = isDarkMode,
                     onClick = {

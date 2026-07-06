@@ -578,6 +578,7 @@ fun OrderHistoryScreen(
                         if (order.dueAmount > 0) {
                             Button(
                                 onClick = {
+                                    selectedOrderDetails = null
                                     showPaymentUpdateDialog = order
                                 },
                                 modifier = Modifier.weight(1f),

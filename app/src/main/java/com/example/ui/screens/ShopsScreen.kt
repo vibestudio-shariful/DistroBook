@@ -58,6 +58,8 @@ fun ShopsScreen(
     var showDeleteConfirmation by remember { mutableStateOf<Shop?>(null) }
     
     var selectedShopDetails by remember { mutableStateOf<Shop?>(null) }
+    var showPaymentDialogForShop by remember { mutableStateOf<Shop?>(null) }
+    var paymentAmountInput by remember { mutableStateOf("") }
 
     val filteredShops = remember(shops, searchQuery) {
         if (searchQuery.isBlank()) {
@@ -431,8 +433,9 @@ fun ShopsScreen(
                     if (shopTotalDue > 0) {
                         Button(
                             onClick = {
-                                viewModel.collectAllShopDues(shop.id)
+                                paymentAmountInput = ""
                                 selectedShopDetails = null
+                                showPaymentDialogForShop = shop
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                         ) {
@@ -466,6 +469,49 @@ fun ShopsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmation = null }) {
+                    Text(t(viewModel, "বাতিল (Cancel)", "Cancel"))
+                }
+            }
+        )
+    }
+
+    // Payment Amount Dialog
+    showPaymentDialogForShop?.let { shop ->
+        AlertDialog(
+            onDismissRequest = { showPaymentDialogForShop = null },
+            title = { Text(t(viewModel, "বকেয়া আদায়", "Collect Due")) },
+            text = {
+                Column {
+                    Text(
+                        t(viewModel, "কত টাকা আদায় হয়েছে?", "Enter amount collected:")
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = paymentAmountInput,
+                        onValueChange = { paymentAmountInput = it },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        label = { Text(t(viewModel, "টাকার পরিমাণ", "Amount")) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val amount = paymentAmountInput.toDoubleOrNull()
+                        if (amount != null && amount > 0) {
+                            viewModel.collectPartialShopDues(shop.id, amount)
+                        }
+                        showPaymentDialogForShop = null
+                        selectedShopDetails = null
+                    }
+                ) {
+                    Text(t(viewModel, "নিশ্চিত করুন (Confirm)", "Confirm"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPaymentDialogForShop = null }) {
                     Text(t(viewModel, "বাতিল (Cancel)", "Cancel"))
                 }
             }
@@ -650,14 +696,14 @@ fun ShopItemRow(
                 // Outstanding Due Badge
                 val isDark = isDarkMode
                 val dueBg = if (dueAmount > 0) {
-                    if (isDark) Color(0xFF422020) else Color(0xFFFFEBEE)
+                    MaterialTheme.colorScheme.errorContainer
                 } else {
-                    if (isDark) Color(0xFF203220) else Color(0xFFE8F5E9)
+                    if (isDark) Color(0xFF1B5E20).copy(alpha = 0.3f) else Color(0xFFE8F5E9)
                 }
                 val dueColor = if (dueAmount > 0) {
-                    if (isDark) Color(0xFFFFEBEE) else Color(0xFFB71C1C)
+                    MaterialTheme.colorScheme.onErrorContainer
                 } else {
-                    if (isDark) Color(0xFFE8F5E9) else Color(0xFF1B5E20)
+                    if (isDark) Color(0xFFC8E6C9) else Color(0xFF2E7D32)
                 }
                 val dueText = if (dueAmount > 0) {
                     if (isEnglish) "Due: ৳${String.format("%,.0f", dueAmount)}" else "বকেয়া: ৳${String.format("%,.0f", dueAmount)}"

@@ -615,6 +615,35 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun collectPartialShopDues(shopId: Int, paymentAmount: Double) {
+        viewModelScope.launch {
+            var remainingPayment = paymentAmount
+            val shopOrders = repository.allOrders.first()
+                .filter { it.shopId == shopId && !it.isPaid && it.dueAmount > 0 }
+                .sortedBy { it.timestamp }
+                
+            for (order in shopOrders) {
+                if (remainingPayment <= 0.0) break
+                val due = order.dueAmount
+                if (remainingPayment >= due) {
+                    val updatedOrder = order.copy(
+                        paidAmount = order.totalAmount,
+                        isPaid = true
+                    )
+                    repository.updateOrder(updatedOrder)
+                    remainingPayment -= due
+                } else {
+                    val updatedOrder = order.copy(
+                        paidAmount = order.paidAmount + remainingPayment,
+                        isPaid = false
+                    )
+                    repository.updateOrder(updatedOrder)
+                    remainingPayment = 0.0
+                }
+            }
+        }
+    }
+
     fun collectAllShopDues(shopId: Int) {
         viewModelScope.launch {
             val shopOrders = repository.allOrders.first().filter { it.shopId == shopId && !it.isPaid }

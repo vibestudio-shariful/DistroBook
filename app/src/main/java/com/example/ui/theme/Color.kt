@@ -9,6 +9,7 @@ val SecondaryModern = Color(0xFF6366F1) // Indigo accent
 val TertiaryModern = Color(0xFF0EA5E9) // Sky Blue
 
 // Dark Theme Colors (Midnight Slate)
+val DarkPrimary = Color(0xFF818CF8) // Light Indigo / Blue
 val DarkBackground = Color(0xFF020617)
 val DarkSurface = Color(0xFF0F172A)
 val DarkSurfaceVariant = Color(0xFF1E293B)

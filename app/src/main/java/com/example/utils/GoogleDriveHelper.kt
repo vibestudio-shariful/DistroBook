@@ -118,7 +118,7 @@ object GoogleDriveHelper {
                                 val sizeStr = fileJson.optString("size", "0")
                                 val size = sizeStr.toLongOrNull() ?: 0L
                                 if (id.isNotEmpty()) {
-                                    Log.d(TAG, "Found file in appDataFolder: $name (ID: $id)")
+                                    Log.d(TAG, "File in appDataFolder: $name (ID: $id)")
                                     if (name.startsWith("distrobook_backup_")) {
                                         backupList.add(DriveBackupFile(id, name, createdTime, size))
                                     }

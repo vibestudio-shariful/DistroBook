@@ -90,11 +90,15 @@ fun MainAppScreen() {
   // Set Navigation Bar Color
   val view = LocalView.current
   val navBarColor = MaterialTheme.colorScheme.primaryContainer.toArgb()
+  
   SideEffect {
     val window = (view.context as Activity).window
     window.navigationBarColor = navBarColor
-    // Optionally set status bar color
+    // Set status bar color to be consistent with TopAppBar
     window.statusBarColor = navBarColor
+    
+    // Ensure status bar icons are light (white) if the background is dark
+    WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
   }
 
   Scaffold(
@@ -210,8 +214,8 @@ fun MainAppScreen() {
               selectedIconColor = MaterialTheme.colorScheme.onPrimary,
               selectedTextColor = MaterialTheme.colorScheme.primary,
               indicatorColor = MaterialTheme.colorScheme.primary,
-              unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-              unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+              unselectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+              unselectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
             ),
             modifier = Modifier.testTag("nav_item_${item.route}")
           )

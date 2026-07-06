@@ -35,17 +35,17 @@ private val DarkColorScheme = darkColorScheme(
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryPurple,
     onPrimary = OnPrimaryWhite,
-    primaryContainer = SecondaryPurple,
-    onPrimaryContainer = DarkTextPurple,
-    secondary = SecondaryPurple,
-    onSecondary = DarkTextPurple,
+    primaryContainer = Color(0xFF6D28D9), // Darker purple container
+    onPrimaryContainer = Color(0xFFEDE9FE), // Lighter text on darker container
+    secondary = Color(0xFF6D28D9), // Darker secondary
+    onSecondary = Color(0xFFEDE9FE),
     background = LightBg,
     onBackground = Color(0xFF1C142E),
-    surface = Color.White,
-    onSurface = Color(0xFF1C142E),
-    surfaceVariant = Color(0xFFF5EEFC),
-    onSurfaceVariant = GrayText,
-    outline = BorderGray
+    surface = Color(0xFFDDD6FE), // Significantly darker/richer surface
+    onSurface = Color(0xFF1E1B4B), // Very dark purple text for contrast
+    surfaceVariant = Color(0xFFC4B5FD), // Darker variant
+    onSurfaceVariant = Color(0xFF2E1065), // Richer secondary text
+    outline = Color(0xFF7E22CE) // Darker border
 )
 
 @Composable

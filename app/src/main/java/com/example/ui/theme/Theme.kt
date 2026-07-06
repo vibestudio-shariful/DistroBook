@@ -27,23 +27,23 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = DarkOnSurface,
     surface = DarkSurface,
     onSurface = DarkOnSurface,
-    surfaceVariant = Color(0xFF1E2638),
+    surfaceVariant = Color(0xFF221C38),
     onSurfaceVariant = DarkGrayText,
     outline = DarkBorder
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryBlue,
+    primary = PrimaryPurple,
     onPrimary = OnPrimaryWhite,
-    primaryContainer = SecondaryBlue,
-    onPrimaryContainer = DarkTextBlue,
-    secondary = SecondaryBlue,
-    onSecondary = DarkTextBlue,
+    primaryContainer = SecondaryPurple,
+    onPrimaryContainer = DarkTextPurple,
+    secondary = SecondaryPurple,
+    onSecondary = DarkTextPurple,
     background = LightBg,
-    onBackground = Color(0xFF151B24),
+    onBackground = Color(0xFF1C142E),
     surface = Color.White,
-    onSurface = Color(0xFF151B24),
-    surfaceVariant = Color(0xFFE6EEF9),
+    onSurface = Color(0xFF1C142E),
+    surfaceVariant = Color(0xFFF5EEFC),
     onSurfaceVariant = GrayText,
     outline = BorderGray
 )

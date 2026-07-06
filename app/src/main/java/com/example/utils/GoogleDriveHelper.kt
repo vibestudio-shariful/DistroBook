@@ -104,13 +104,18 @@ object GoogleDriveHelper {
                         val filesArray = json.optJSONArray("files") ?: return@withContext emptyList()
                         val backupList = mutableListOf<DriveBackupFile>()
                         for (i in 0 until filesArray.length()) {
-                            val fileJson = filesArray.getJSONObject(i)
-                            val id = fileJson.getString("id")
-                            val name = fileJson.getString("name")
-                            val createdTime = fileJson.optString("createdTime", "")
-                            val size = fileJson.optLong("size", 0L)
-                            if (name.startsWith("distrobook_backup_")) {
-                                backupList.add(DriveBackupFile(id, name, createdTime, size))
+                            try {
+                                val fileJson = filesArray.getJSONObject(i)
+                                val id = fileJson.optString("id", "")
+                                val name = fileJson.optString("name", "")
+                                val createdTime = fileJson.optString("createdTime", "")
+                                val sizeStr = fileJson.optString("size", "0")
+                                val size = sizeStr.toLongOrNull() ?: 0L
+                                if (id.isNotEmpty() && name.startsWith("distrobook_backup_")) {
+                                    backupList.add(DriveBackupFile(id, name, createdTime, size))
+                                }
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error parsing backup file resource at index $i", e)
                             }
                         }
                         backupList

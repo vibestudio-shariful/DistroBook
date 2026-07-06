@@ -60,21 +60,17 @@ fun ProfileScreen(
     var emailInput by remember(currentUserEmail) { mutableStateOf(currentUserEmail) }
     var addressInput by remember(currentUserAddress) { mutableStateOf(currentUserAddress) }
 
+    // Backup & restore pending confirmation states
+    var pendingLocalRestoreUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingCloudRestoreBackup by remember { mutableStateOf<com.example.utils.DriveBackupFile?>(null) }
+    var pendingCloudDeleteBackup by remember { mutableStateOf<com.example.utils.DriveBackupFile?>(null) }
+
     // Backup File Picker Launcher
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            viewModel.importBackup(
-                context = context,
-                uri = uri,
-                onSuccess = {
-                    Toast.makeText(context, tNonCompose(isEnglish, "ডেটা সফলভাবে রিস্টোর হয়েছে!", "Data restored successfully!"), Toast.LENGTH_LONG).show()
-                },
-                onError = { error ->
-                    Toast.makeText(context, tNonCompose(isEnglish, "রিস্টোর ব্যর্থ হয়েছে: $error", "Restore failed: $error"), Toast.LENGTH_LONG).show()
-                }
-            )
+            pendingLocalRestoreUri = uri
         }
     }
 
@@ -141,19 +137,192 @@ fun ProfileScreen(
         }
     }
 
+    var launchRecovery by remember { mutableStateOf<((Intent) -> Unit)?>(null) }
+
     val authRecoveryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
-            viewModel.loadGoogleDriveBackups()
+            viewModel.loadGoogleDriveBackups { intent ->
+                launchRecovery?.invoke(intent)
+            }
             Toast.makeText(context, tNonCompose(isEnglish, "অনুমতি দেওয়া হয়েছে!", "Permission granted!"), Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(context, tNonCompose(isEnglish, "অনুমতি বাতিল করা হয়েছে!", "Permission denied!"), Toast.LENGTH_SHORT).show()
         }
     }
 
+    DisposableEffect(authRecoveryLauncher) {
+        launchRecovery = { intent ->
+            authRecoveryLauncher.launch(intent)
+        }
+        onDispose {
+            launchRecovery = null
+        }
+    }
+
     val onAuthRequired: (Intent) -> Unit = { intent ->
-        authRecoveryLauncher.launch(intent)
+        launchRecovery?.invoke(intent)
+    }
+
+    // Confirmation dialog for Local Restore
+    if (pendingLocalRestoreUri != null) {
+        AlertDialog(
+            onDismissRequest = { pendingLocalRestoreUri = null },
+            title = {
+                Text(
+                    text = t(viewModel, "রিস্টোর নিশ্চিতকরণ", "Confirm Restore"),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = t(
+                        viewModel,
+                        "আপনি কি নিশ্চিত যে আপনি এই লোকাল ব্যাকআপ ফাইল থেকে রিস্টোর করতে চান? আপনার বর্তমান সমস্ত লোকাল ডাটা এই ফাইলের ডেটা দিয়ে প্রতিস্থাপিত হবে এবং পূর্ববর্তী ডেটা মুছে যাবে!",
+                        "Are you sure you want to restore from this local backup file? All your current local data will be replaced by the data from this file, and previous data will be lost!"
+                    )
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val uri = pendingLocalRestoreUri
+                        pendingLocalRestoreUri = null
+                        if (uri != null) {
+                            viewModel.importBackup(
+                                context = context,
+                                uri = uri,
+                                onSuccess = {
+                                    Toast.makeText(context, tNonCompose(isEnglish, "ডেটা সফলভাবে রিস্টোর হয়েছে!", "Data restored successfully!"), Toast.LENGTH_LONG).show()
+                                },
+                                onError = { error ->
+                                    Toast.makeText(context, tNonCompose(isEnglish, "রিস্টোর ব্যর্থ হয়েছে: $error", "Restore failed: $error"), Toast.LENGTH_LONG).show()
+                                }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(t(viewModel, "হ্যাঁ, রিস্টোর করুন", "Yes, Restore"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingLocalRestoreUri = null }) {
+                    Text(t(viewModel, "বাতিল", "Cancel"))
+                }
+            }
+        )
+    }
+
+    // Confirmation dialog for Cloud Restore
+    if (pendingCloudRestoreBackup != null) {
+        AlertDialog(
+            onDismissRequest = { pendingCloudRestoreBackup = null },
+            title = {
+                Text(
+                    text = t(viewModel, "ক্লাউড রিস্টোর নিশ্চিতকরণ", "Confirm Cloud Restore"),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = t(
+                        viewModel,
+                        "আপনি কি নিশ্চিত যে আপনি এই ক্লাউড ব্যাকআপ ফাইল থেকে রিস্টোর করতে চান? আপনার বর্তমান সমস্ত লোকাল ডাটা এই ফাইলের ডেটা দিয়ে প্রতিস্থাপিত হবে!",
+                        "Are you sure you want to restore from this cloud backup file? All your current local data will be replaced by the data from this file!"
+                    )
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val backup = pendingCloudRestoreBackup
+                        pendingCloudRestoreBackup = null
+                        if (backup != null) {
+                            viewModel.restoreFromGoogleDrive(context, backup.id, onAuthRequired) { success, error ->
+                                if (success) {
+                                    Toast.makeText(
+                                        context,
+                                        tNonCompose(isEnglish, "ক্লাউড থেকে সফলভাবে রিস্টোর হয়েছে!", "Cloud Restore Successful!"),
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Error: $error",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(t(viewModel, "হ্যাঁ, রিস্টোর করুন", "Yes, Restore"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingCloudRestoreBackup = null }) {
+                    Text(t(viewModel, "বাতিল", "Cancel"))
+                }
+            }
+        )
+    }
+
+    // Confirmation dialog for Cloud Delete
+    if (pendingCloudDeleteBackup != null) {
+        AlertDialog(
+            onDismissRequest = { pendingCloudDeleteBackup = null },
+            title = {
+                Text(
+                    text = t(viewModel, "ব্যাকআপ ফাইল মুছুন", "Delete Backup File"),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = t(
+                        viewModel,
+                        "আপনি কি নিশ্চিত যে আপনি এই ক্লাউড ব্যাকআপ ফাইলটি সম্পূর্ণভাবে মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা সম্ভব হবে না!",
+                        "Are you sure you want to permanently delete this cloud backup file? This action cannot be undone!"
+                    )
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val backup = pendingCloudDeleteBackup
+                        pendingCloudDeleteBackup = null
+                        if (backup != null) {
+                            viewModel.deleteGoogleDriveBackup(context, backup.id, onAuthRequired) { success ->
+                                if (success) {
+                                    Toast.makeText(
+                                        context,
+                                        tNonCompose(isEnglish, "ব্যাকআপ মুছে ফেলা হয়েছে", "Backup deleted"),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        tNonCompose(isEnglish, "মুছতে ব্যর্থ হয়েছে", "Failed to delete"),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(t(viewModel, "মুছে ফেলুন", "Delete"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingCloudDeleteBackup = null }) {
+                    Text(t(viewModel, "বাতিল", "Cancel"))
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -483,8 +652,15 @@ fun ProfileScreen(
                 }
             }
 
-            // Section 3: Local Backup & Restore Card
+            // Section 3: Unified Backup & Restore Card (Local & Cloud side-by-side / one below the other)
             item {
+                val googleAccountEmail by viewModel.googleAccountEmail.collectAsState()
+                val googleAccountDisplayName by viewModel.googleAccountDisplayName.collectAsState()
+                val driveBackups by viewModel.googleDriveBackups.collectAsState()
+                val isDriveLoading by viewModel.isDriveLoading.collectAsState()
+                
+                var showDriveBackupsDialog by remember { mutableStateOf(false) }
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -495,72 +671,399 @@ fun ProfileScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        // Card Header
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(Icons.Default.Backup, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Column {
+                            Icon(
+                                imageVector = Icons.Default.Backup,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = t(viewModel, "ডাটা ব্যাকআপ ও রিস্টোর", "Data Backup & Restore"),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                        // SUBSECTION 1: Local Backup & Restore
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SdStorage,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
                                 Text(
                                     text = t(viewModel, "লোকাল ব্যাকআপ ও রিস্টোর", "Local Backup & Restore"),
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
+                                    fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
-                                Text(
-                                    text = t(viewModel, "আপনার সমস্ত ডাটা ফোনের মেমোরিতে ফাইল আকারে ব্যাকআপ রাখুন এবং যেকোনো সময় রিস্টোর করুন।", "Backup your entire data as a JSON file on your phone's memory and restore anytime."),
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            }
+                            Text(
+                                text = t(viewModel, "আপনার সমস্ত ডাটা ফোনের মেমোরিতে ফাইল আকারে ব্যাকআপ রাখুন এবং যেকোনো সময় রিস্টোর করুন।", "Backup your entire data as a JSON file on your phone's memory and restore anytime."),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 16.sp
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // Backup Button
+                                Button(
+                                    onClick = {
+                                        try {
+                                            createDocumentLauncher.launch(defaultFilename)
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, tNonCompose(isEnglish, "ব্যাকআপ ক্রিয়েটর ওপেন করা যায়নি", "Failed to open backup creator"), Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(t(viewModel, "ব্যাকআপ তৈরি", "Create Backup"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+
+                                // Restore Button
+                                OutlinedButton(
+                                    onClick = {
+                                        try {
+                                            filePickerLauncher.launch("*/*")
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, tNonCompose(isEnglish, "রিস্টোর লঞ্চার ওপেন করা যায়নি", "Failed to open restore launcher"), Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(t(viewModel, "রিস্টোর করুন", "Restore Backup"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
                             }
                         }
 
                         Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        // SUBSECTION 2: Google Drive / Cloud Backup & Restore
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            // Backup Button
-                            Button(
-                                onClick = {
-                                    try {
-                                        createDocumentLauncher.launch(defaultFilename)
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, tNonCompose(isEnglish, "ব্যাকআপ ক্রিয়েটর ওপেন করা যায়নি", "Failed to open backup creator"), Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(t(viewModel, "ব্যাকআপ ফাইল তৈরি", "Create Backup File"), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Icon(
+                                    imageVector = Icons.Default.CloudQueue,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = t(viewModel, "অনলাইন ব্যাকআপ (গুগল ড্রাইভ)", "Online Backup (Google Drive)"),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
                             }
 
-                            // Restore Button
-                            OutlinedButton(
-                                onClick = {
-                                    try {
-                                        filePickerLauncher.launch("*/*")
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, tNonCompose(isEnglish, "রিস্টোর লঞ্চার ওপেন করা যায়নি", "Failed to open restore launcher"), Toast.LENGTH_SHORT).show()
+                            if (googleAccountEmail != null) {
+                                // Signed in State
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                    ),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.AccountCircle,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                            Column {
+                                                Text(
+                                                    text = googleAccountDisplayName ?: "",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                                Text(
+                                                    text = googleAccountEmail ?: "",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                                )
+                                            }
+                                        }
+                                        
+                                        TextButton(
+                                            onClick = {
+                                                googleSignInClient.signOut().addOnCompleteListener {
+                                                    viewModel.setGoogleAccount(null, null)
+                                                }
+                                            }
+                                        ) {
+                                            Text(
+                                                text = t(viewModel, "লগআউট", "Sign Out"),
+                                                color = MaterialTheme.colorScheme.error,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                            ) {
-                                Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(t(viewModel, "রিস্টোর করুন", "Restore Backup"), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                }
+
+                                Text(
+                                    text = t(
+                                        viewModel,
+                                        "আপনার প্রোফাইল ছবি, শপের ছবি এবং সমস্ত বেচাকেনা ও ক্রেতার তথ্য সম্পূর্ণ নিরাপদ রাখতে সরাসরি গুগল ড্রাইভে ব্যাকআপ রাখুন।",
+                                        "Securely backup your profile photos, shop photos, sales records, and customer details directly to Google Drive."
+                                    ),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 16.sp
+                                )
+
+                                if (isDriveLoading) {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                    }
+                                } else {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Button(
+                                            onClick = {
+                                                viewModel.backupToGoogleDrive(context, onAuthRequired) { success, error ->
+                                                    if (success) {
+                                                        Toast.makeText(
+                                                            context,
+                                                            tNonCompose(isEnglish, "গুগল ড্রাইভ ক্লাউড ব্যাকআপ সফল হয়েছে!", "Google Drive Cloud Backup Successful!"),
+                                                            Toast.LENGTH_LONG
+                                                        ).show()
+                                                    } else {
+                                                        Toast.makeText(
+                                                            context,
+                                                            tNonCompose(isEnglish, "ক্লাউড ব্যাকআপ ব্যর্থ হয়েছে: $error", "Cloud Backup Failed: $error"),
+                                                            Toast.LENGTH_LONG
+                                                        ).show()
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                        ) {
+                                            Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(t(viewModel, "ক্লাউড ব্যাকআপ", "Cloud Backup"), fontSize = 13.sp)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = {
+                                                viewModel.loadGoogleDriveBackups(onAuthRequired)
+                                                showDriveBackupsDialog = true
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp),
+                                            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                                        ) {
+                                            Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(t(viewModel, "ক্লাউড রিস্টোর", "Cloud Restore"), fontSize = 13.sp)
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Signed out State
+                                Text(
+                                    text = t(
+                                        viewModel,
+                                        "আপনার প্রোফাইল ছবি, শপের ছবি এবং বেচাকেনার সমস্ত ডাটা সুরক্ষিত রাখতে গুগল ড্রাইভ ব্যাকআপ সিস্টেম চালু করুন। হোয়াটসঅ্যাপের মতো যখন খুশি তখন যেকোনো ফোনে সম্পূর্ণ ডাটা রিস্টোর করতে পারবেন।",
+                                        "Enable Google Drive cloud backups to keep profile photos, shop photos, and sales data absolutely secure. Restore your entire data anytime on any phone, just like WhatsApp."
+                                    ),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 16.sp
+                                )
+
+                                Button(
+                                    onClick = {
+                                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Icon(Icons.Default.CloudQueue, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = t(viewModel, "গুগল একাউন্ট দিয়ে সাইন-ইন করুন", "Sign-in with Google"),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
+                }
+
+                // Cloud backup list dialog
+                if (showDriveBackupsDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDriveBackupsDialog = false },
+                        title = {
+                            Text(
+                                text = t(viewModel, "ক্লাউড ব্যাকআপ তালিকা", "Cloud Backup List"),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        text = {
+                            if (isDriveLoading) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            } else if (driveBackups.isEmpty()) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = t(viewModel, "কোনো ক্লাউড ব্যাকআপ পাওয়া যায়নি!", "No cloud backups found!"),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            } else {
+                                LazyColumn(
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    items(driveBackups) { backup ->
+                                        val displayName = try {
+                                            val parts = backup.name.replace("distrobook_backup_", "").replace(".json", "")
+                                            val parser = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                                            val formatter = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+                                            val date = parser.parse(parts)
+                                            if (date != null) formatter.format(date) else backup.name
+                                        } catch (e: Exception) {
+                                            backup.name
+                                        }
+
+                                        val sizeInKb = String.format("%.1f", backup.size / 1024.0)
+
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    pendingCloudRestoreBackup = backup
+                                                },
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                            ),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(12.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.CloudDownload,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                    Column {
+                                                        Text(
+                                                            text = displayName,
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = MaterialTheme.colorScheme.onSurface
+                                                        )
+                                                        Text(
+                                                            text = "$sizeInKb KB",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+
+                                                IconButton(
+                                                    onClick = {
+                                                        pendingCloudDeleteBackup = backup
+                                                    }
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Delete,
+                                                        contentDescription = "Delete Backup",
+                                                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showDriveBackupsDialog = false }) {
+                                Text(text = t(viewModel, "বাতিল", "Cancel"))
+                            }
+                        }
+                    )
                 }
             }
 
@@ -681,348 +1184,6 @@ fun ProfileScreen(
                 }
             }
 
-            // Section 5: Online Backup (Google Drive) Card
-            item {
-                val googleAccountEmail by viewModel.googleAccountEmail.collectAsState()
-                val googleAccountDisplayName by viewModel.googleAccountDisplayName.collectAsState()
-                val driveBackups by viewModel.googleDriveBackups.collectAsState()
-                val isDriveLoading by viewModel.isDriveLoading.collectAsState()
-                
-                var showDriveBackupsDialog by remember { mutableStateOf(false) }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CloudUpload,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = t(viewModel, "অনলাইন ব্যাকআপ (গুগল ড্রাইভ)", "Online Backup (Google Drive)"),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-
-                        if (googleAccountEmail != null) {
-                            // Signed in State
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AccountCircle,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(28.dp)
-                                        )
-                                        Column {
-                                            Text(
-                                                text = googleAccountDisplayName ?: "",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
-                                            Text(
-                                                text = googleAccountEmail ?: "",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                            )
-                                        }
-                                    }
-                                    
-                                    TextButton(
-                                        onClick = {
-                                            googleSignInClient.signOut().addOnCompleteListener {
-                                                viewModel.setGoogleAccount(null, null)
-                                            }
-                                        }
-                                    ) {
-                                        Text(
-                                            text = t(viewModel, "লগআউট", "Sign Out"),
-                                            color = MaterialTheme.colorScheme.error,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-
-                            Text(
-                                text = t(
-                                    viewModel,
-                                    "আপনার প্রোফাইল ছবি, শপের ছবি এবং সমস্ত বেচাকেনা ও ক্রেতার তথ্য সম্পূর্ণ নিরাপদ রাখতে সরাসরি গুগল ড্রাইভে ব্যাকআপ রাখুন। নতুন ফোন কিনলে বা অ্যাপ রি-ইন্সটল করলে যেকোনো সময় তা এক ক্লিকে রিস্টোর করে আগের অবস্থায় ফিরে যেতে পারবেন।",
-                                    "Securely backup your profile photos, shop photos, sales records, and customer details directly to Google Drive. Restore anytime in one click on a new device or after reinstallation."
-                                ),
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 16.sp
-                            )
-
-                            if (isDriveLoading) {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                                }
-                            } else {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Button(
-                                        onClick = {
-                                            viewModel.backupToGoogleDrive(context, onAuthRequired) { success, error ->
-                                                if (success) {
-                                                    Toast.makeText(
-                                                        context,
-                                                        tNonCompose(isEnglish, "গুগল ড্রাইভ ক্লাউড ব্যাকআপ সফল হয়েছে!", "Google Drive Cloud Backup Successful!"),
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
-                                                } else {
-                                                    Toast.makeText(
-                                                        context,
-                                                        tNonCompose(isEnglish, "ক্লাউড ব্যাকআপ ব্যর্থ হয়েছে: $error", "Cloud Backup Failed: $error"),
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
-                                                }
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(10.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                                    ) {
-                                        Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(t(viewModel, "ক্লাউড ব্যাকআপ", "Cloud Backup"), fontSize = 13.sp)
-                                    }
-
-                                    OutlinedButton(
-                                        onClick = {
-                                            viewModel.loadGoogleDriveBackups()
-                                            showDriveBackupsDialog = true
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(t(viewModel, "ক্লাউড রিস্টোর", "Cloud Restore"), fontSize = 13.sp)
-                                    }
-                                }
-                            }
-                        } else {
-                            // Signed out State
-                            Text(
-                                text = t(
-                                    viewModel,
-                                    "আপনার প্রোফাইল ছবি, শপের ছবি এবং বেচাকেনার সমস্ত ডাটা সুরক্ষিত রাখতে গুগল ড্রাইভ ব্যাকআপ সিস্টেম চালু করুন। হোয়াটসঅ্যাপের মতো যখন খুশি তখন যেকোনো ফোনে সম্পূর্ণ ডাটা রিস্টোর করতে পারবেন।",
-                                    "Enable Google Drive cloud backups to keep profile photos, shop photos, and sales data absolutely secure. Restore your entire data anytime on any phone, just like WhatsApp."
-                                ),
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 16.sp
-                            )
-
-                            Button(
-                                onClick = {
-                                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                            ) {
-                                Icon(Icons.Default.CloudQueue, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = t(viewModel, "গুগল একাউন্ট দিয়ে সাইন-ইন করুন", "Sign-in with Google"),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (showDriveBackupsDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showDriveBackupsDialog = false },
-                        title = {
-                            Text(
-                                text = t(viewModel, "ক্লাউড ব্যাকআপ তালিকা", "Cloud Backup List"),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        },
-                        text = {
-                            if (isDriveLoading) {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().height(150.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
-                            } else if (driveBackups.isEmpty()) {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().height(100.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = t(viewModel, "কোনো ক্লাউড ব্যাকআপ পাওয়া যায়নি!", "No cloud backups found!"),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            } else {
-                                LazyColumn(
-                                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    items(driveBackups) { backup ->
-                                        val displayName = try {
-                                            val parts = backup.name.replace("distrobook_backup_", "").replace(".json", "")
-                                            val parser = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-                                            val formatter = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
-                                            val date = parser.parse(parts)
-                                            if (date != null) formatter.format(date) else backup.name
-                                        } catch (e: Exception) {
-                                            backup.name
-                                        }
-
-                                        val sizeInKb = String.format("%.1f", backup.size / 1024.0)
-
-                                        Card(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    viewModel.restoreFromGoogleDrive(context, backup.id, onAuthRequired) { success, error ->
-                                                        if (success) {
-                                                            Toast.makeText(
-                                                                context,
-                                                                tNonCompose(isEnglish, "ক্লাউড থেকে সফলভাবে রিস্টোর হয়েছে!", "Cloud Restore Successful!"),
-                                                                Toast.LENGTH_LONG
-                                                            ).show()
-                                                            showDriveBackupsDialog = false
-                                                        } else {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Error: $error",
-                                                                Toast.LENGTH_LONG
-                                                            ).show()
-                                                        }
-                                                    }
-                                                },
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                            ),
-                                            shape = RoundedCornerShape(10.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(12.dp),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                    modifier = Modifier.weight(1f)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.CloudDownload,
-                                                        contentDescription = null,
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.size(24.dp)
-                                                    )
-                                                    Column {
-                                                        Text(
-                                                            text = displayName,
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = MaterialTheme.colorScheme.onSurface
-                                                        )
-                                                        Text(
-                                                            text = "$sizeInKb KB",
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    }
-                                                }
-
-                                                IconButton(
-                                                    onClick = {
-                                                        viewModel.deleteGoogleDriveBackup(context, backup.id, onAuthRequired) { success ->
-                                                            if (success) {
-                                                                Toast.makeText(
-                                                                    context,
-                                                                    tNonCompose(isEnglish, "ব্যাকআপ মুছে ফেলা হয়েছে", "Backup deleted"),
-                                                                    Toast.LENGTH_SHORT
-                                                                ).show()
-                                                            } else {
-                                                                Toast.makeText(
-                                                                    context,
-                                                                    tNonCompose(isEnglish, "মুছতে ব্যর্থ হয়েছে", "Failed to delete"),
-                                                                    Toast.LENGTH_SHORT
-                                                                ).show()
-                                                            }
-                                                        }
-                                                    }
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Delete,
-                                                        contentDescription = "Delete Backup",
-                                                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { showDriveBackupsDialog = false }) {
-                                Text(text = t(viewModel, "বাতিল", "Cancel"))
-                            }
-                        }
-                    )
-                }
-            }
-
             // Section 6: App Information Card
             item {
                 Card(
@@ -1059,7 +1220,7 @@ fun ProfileScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = t(viewModel, "সংস্করণ: ১.১.০ (v1.1.0)", "Version: 1.1.0 (v1.1.0)"),
+                            text = t(viewModel, "সংস্করণ: ১.২.০ (v1.2.0)", "Version: 1.2.0 (v1.2.0)"),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

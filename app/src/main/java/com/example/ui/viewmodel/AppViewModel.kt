@@ -81,14 +81,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun loadGoogleDriveBackups() {
+    fun loadGoogleDriveBackups(onAuthRequired: ((Intent) -> Unit)? = null) {
         val email = googleAccountEmail.value ?: return
         viewModelScope.launch {
             isDriveLoading.value = true
             try {
-                // If this is called in background, it might fail if UserRecoverableAuthException is thrown.
-                // We'll wrap it carefully and catch exceptions.
-                val token = com.example.utils.GoogleDriveHelper.getAccessToken(getApplication(), email)
+                // Get token, requesting auth recovery if needed and callback is provided
+                val token = if (onAuthRequired != null) {
+                    getDriveAccessToken(getApplication(), email, onAuthRequired)
+                } else {
+                    com.example.utils.GoogleDriveHelper.getAccessToken(getApplication(), email)
+                }
                 if (token != null) {
                     val backups = com.example.utils.GoogleDriveHelper.listBackups(token)
                     googleDriveBackups.value = backups

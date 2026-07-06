@@ -2,27 +2,28 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Premium deep color palette
-val PrimaryBlue = Color(0xFF004275) // Deeper, premium royal blue
+// Premium vibrant purple color palette
+val PrimaryPurple = Color(0xFF7C3AED) // Royal Purple (vibrant, modern, premium)
 val OnPrimaryWhite = Color(0xFFFFFFFF)
-val SecondaryBlue = Color(0xFFD3E4FF)
-val DarkTextBlue = Color(0xFF001E35)
-val GrayText = Color(0xFF3F4853)
-val LightBg = Color(0xFFF3F6FA) // Balanced soft cool slate light background
-val BorderGray = Color(0xFFBEC8D2)
+val SecondaryPurple = Color(0xFFF3E8FF) // Warm soft lavender container
+val DarkTextPurple = Color(0xFF4C1D95) // Deep rich violet-purple text
+val GrayText = Color(0xFF5B4F66) // Soft dark purple-slate gray
+val LightBg = Color(0xFFFAF5FF) // Luxurious soft lavender-cream background
+val BorderGray = Color(0xFFE9D5FF) // Elegant soft lavender-purple border
 
 val PaidGreenBg = Color(0xFFD4EAD6)
 val PaidGreenText = Color(0xFF0F3D1C)
 val DueRedBg = Color(0xFFFADCD9)
 val DueRedText = Color(0xFF5A1210)
 
-// Beautiful deep dark mode specific colors
-val DarkPrimary = Color(0xFF9ECAFF)
-val DarkOnPrimary = Color(0xFF003258)
-val DarkPrimaryContainer = Color(0xFF00497E)
-val DarkOnPrimaryContainer = Color(0xFFD1E4FF)
-val DarkBackground = Color(0xFF080C14) // Deep navy-black canvas
-val DarkSurface = Color(0xFF2D3748)    // Slightly lighter elevated slate card container
-val DarkOnSurface = Color(0xFFF8FAFC)  // Very light slate text for better legibility
-val DarkBorder = Color(0xFF64748B)     // Slightly lighter slate border
-val DarkGrayText = Color(0xFFCBD5E1)   // Lighter slate text for secondary elements
+// Beautiful premium deep dark mode specific purple colors
+val DarkPrimary = Color(0xFFA78BFA) // Vibrant lavender/violet
+val DarkOnPrimary = Color(0xFF3B0764) // Deep violet-black
+val DarkPrimaryContainer = Color(0xFF5B21B6) // Rich deep royal purple
+val DarkOnPrimaryContainer = Color(0xFFF3E8FF) // Soft lavender text
+val DarkBackground = Color(0xFF0B0914) // Deepest black-navy with rich dark purple undertones
+val DarkSurface = Color(0xFF161224)    // Elevated warm dark indigo-purple surface
+val DarkOnSurface = Color(0xFFF5F3FF)  // Crisp soft lavender off-white text
+val DarkBorder = Color(0xFF3B2F52)     // Deep indigo-purple border
+val DarkGrayText = Color(0xFFC4B5FD)   // Soft secondary lavender text
+

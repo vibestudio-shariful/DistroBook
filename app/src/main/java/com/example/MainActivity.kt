@@ -297,9 +297,9 @@ fun SplashScreen(isDarkMode: Boolean, isEnglish: Boolean, onTimeout: () -> Unit)
   }
 
   val gradientColors = if (isDarkMode) {
-    listOf(Color(0xFF0F172A), Color(0xFF1E293B))
+    listOf(Color(0xFF0F091D), Color(0xFF1F1235))
   } else {
-    listOf(Color(0xFFEFF6FF), Color(0xFFDBEAFE))
+    listOf(Color(0xFFFAF5FF), Color(0xFFF3E8FF))
   }
 
   Box(
@@ -331,7 +331,7 @@ fun SplashScreen(isDarkMode: Boolean, isEnglish: Boolean, onTimeout: () -> Unit)
         text = if (isEnglish) "DistroBook" else "ডিস্ট্রো-বুক",
         fontSize = 32.sp,
         fontWeight = FontWeight.ExtraBold,
-        color = if (isDarkMode) Color.White else Color(0xFF1E3A8A),
+        color = if (isDarkMode) Color.White else Color(0xFF5B21B6),
         modifier = Modifier.alpha(alpha.value)
       )
 
@@ -342,7 +342,7 @@ fun SplashScreen(isDarkMode: Boolean, isEnglish: Boolean, onTimeout: () -> Unit)
         text = if (isEnglish) "Distribution Ledger & Memo Manager" else "দোকান সাপ্লাই ও মেমো ডায়েরি",
         fontSize = 14.sp,
         fontWeight = FontWeight.Medium,
-        color = if (isDarkMode) Color(0xFF94A3B8) else Color(0xFF475569),
+        color = if (isDarkMode) Color(0xFFC4B5FD) else Color(0xFF6D28D9),
         textAlign = TextAlign.Center,
         modifier = Modifier.alpha(alpha.value)
       )
@@ -351,7 +351,7 @@ fun SplashScreen(isDarkMode: Boolean, isEnglish: Boolean, onTimeout: () -> Unit)
 
       // Progress bar
       CircularProgressIndicator(
-        color = if (isDarkMode) Color(0xFF3B82F6) else Color(0xFF2563EB),
+        color = if (isDarkMode) Color(0xFFA78BFA) else Color(0xFF7C3AED),
         strokeWidth = 3.dp,
         modifier = Modifier
           .size(32.dp)
@@ -359,26 +359,26 @@ fun SplashScreen(isDarkMode: Boolean, isEnglish: Boolean, onTimeout: () -> Unit)
       )
     }
 
-    // Bottom branding & version
+    // Bottom branding & version (increased bottom padding to 75.dp so it's not hidden under navigation bar)
     Column(
       modifier = Modifier
         .align(Alignment.BottomCenter)
-        .padding(bottom = 32.dp)
+        .padding(bottom = 75.dp)
         .alpha(alpha.value),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Text(
-        text = if (isEnglish) "Version 1.1.0" else "সংস্করণ ১.১.০",
+        text = if (isEnglish) "Version 1.2.0" else "সংস্করণ ১.২.০",
         fontSize = 12.sp,
         fontWeight = FontWeight.SemiBold,
-        color = if (isDarkMode) Color(0xFF64748B) else Color(0xFF475569)
+        color = if (isDarkMode) Color(0xFFC4B5FD) else Color(0xFF6D28D9)
       )
       Spacer(modifier = Modifier.height(4.dp))
       Text(
         text = "VibeStudio",
         fontSize = 13.sp,
         fontWeight = FontWeight.Bold,
-        color = if (isDarkMode) Color(0xFF3B82F6) else Color(0xFF2563EB)
+        color = if (isDarkMode) Color(0xFFA78BFA) else Color(0xFF7C3AED)
       )
     }
   }

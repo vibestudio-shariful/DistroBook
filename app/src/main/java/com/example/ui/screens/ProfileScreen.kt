@@ -138,6 +138,9 @@ fun ProfileScreen(
     }
 
     var launchRecovery by remember { mutableStateOf<((Intent) -> Unit)?>(null) }
+    var showSignOutConfirm by remember { mutableStateOf(false) }
+    var showBackupConfirm by remember { mutableStateOf(false) }
+    var showRestoreConfirm by remember { mutableStateOf(false) }
 
     val authRecoveryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -211,6 +214,45 @@ fun ProfileScreen(
                 TextButton(onClick = { pendingLocalRestoreUri = null }) {
                     Text(t(viewModel, "বাতিল", "Cancel"))
                 }
+            }
+        )
+    }
+
+    // Confirmation dialog for Cloud Backup
+    if (showBackupConfirm) {
+        AlertDialog(
+            onDismissRequest = { showBackupConfirm = false },
+            title = { Text(t(viewModel, "ব্যাকআপ নিশ্চিতকরণ", "Confirm Backup")) },
+            text = { Text(t(viewModel, "আপনি কি আপনার বর্তমান ডাটা গুগল ড্রাইভে ব্যাকআপ করতে চান?", "Are you sure you want to backup your current data to Google Drive?")) },
+            confirmButton = {
+                Button(onClick = {
+                    showBackupConfirm = false
+                    viewModel.backupToGoogleDrive(context, onAuthRequired) { success, error ->
+                        if (success) Toast.makeText(context, "Backup Successful!", Toast.LENGTH_LONG).show()
+                        else Toast.makeText(context, "Backup Failed: $error", Toast.LENGTH_LONG).show()
+                    }
+                }) { Text(t(viewModel, "হ্যাঁ", "Yes")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBackupConfirm = false }) { Text(t(viewModel, "না", "No")) }
+            }
+        )
+    }
+
+    // Confirmation dialog for Sign Out
+    if (showSignOutConfirm) {
+        AlertDialog(
+            onDismissRequest = { showSignOutConfirm = false },
+            title = { Text(t(viewModel, "লগআউট নিশ্চিতকরণ", "Confirm Sign Out")) },
+            text = { Text(t(viewModel, "আপনি কি নিশ্চিত যে আপনি লগআউট করতে চান?", "Are you sure you want to sign out?")) },
+            confirmButton = {
+                Button(onClick = {
+                    showSignOutConfirm = false
+                    googleSignInClient.signOut().addOnCompleteListener { viewModel.setGoogleAccount(null, null) }
+                }) { Text(t(viewModel, "হ্যাঁ", "Yes")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSignOutConfirm = false }) { Text(t(viewModel, "না", "No")) }
             }
         )
     }
@@ -833,11 +875,7 @@ fun ProfileScreen(
                                         }
                                         
                                         TextButton(
-                                            onClick = {
-                                                googleSignInClient.signOut().addOnCompleteListener {
-                                                    viewModel.setGoogleAccount(null, null)
-                                                }
-                                            }
+                                            onClick = { showSignOutConfirm = true }
                                         ) {
                                             Text(
                                                 text = t(viewModel, "লগআউট", "Sign Out"),
@@ -873,23 +911,7 @@ fun ProfileScreen(
                                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
                                         Button(
-                                            onClick = {
-                                                viewModel.backupToGoogleDrive(context, onAuthRequired) { success, error ->
-                                                    if (success) {
-                                                        Toast.makeText(
-                                                            context,
-                                                            tNonCompose(isEnglish, "গুগল ড্রাইভ ক্লাউড ব্যাকআপ সফল হয়েছে!", "Google Drive Cloud Backup Successful!"),
-                                                            Toast.LENGTH_LONG
-                                                        ).show()
-                                                    } else {
-                                                        Toast.makeText(
-                                                            context,
-                                                            tNonCompose(isEnglish, "ক্লাউড ব্যাকআপ ব্যর্থ হয়েছে: $error", "Cloud Backup Failed: $error"),
-                                                            Toast.LENGTH_LONG
-                                                        ).show()
-                                                    }
-                                                }
-                                            },
+                                            onClick = { showBackupConfirm = true },
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(10.dp),
                                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)

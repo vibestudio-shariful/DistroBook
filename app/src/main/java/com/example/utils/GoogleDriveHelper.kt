@@ -117,8 +117,11 @@ object GoogleDriveHelper {
                                 val createdTime = fileJson.optString("createdTime", "")
                                 val sizeStr = fileJson.optString("size", "0")
                                 val size = sizeStr.toLongOrNull() ?: 0L
-                                if (id.isNotEmpty() && name.startsWith("distrobook_backup_")) {
-                                    backupList.add(DriveBackupFile(id, name, createdTime, size))
+                                if (id.isNotEmpty()) {
+                                    Log.d(TAG, "Found file in appDataFolder: $name (ID: $id)")
+                                    if (name.startsWith("distrobook_backup_")) {
+                                        backupList.add(DriveBackupFile(id, name, createdTime, size))
+                                    }
                                 }
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error parsing backup file resource at index $i", e)

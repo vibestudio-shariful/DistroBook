@@ -30,7 +30,7 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = DarkOnSurface,
     surfaceVariant = DarkSurfaceVariant,
     onSurfaceVariant = DarkOnSurfaceVariant,
-    outline = DarkSurfaceVariant
+    outline = DarkOutline
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -47,7 +47,7 @@ private val LightColorScheme = lightColorScheme(
     onSurface = LightOnSurface,
     surfaceVariant = LightSurfaceVariant,
     onSurfaceVariant = LightOnSurfaceVariant,
-    outline = LightSurfaceVariant
+    outline = LightOutline
 )
 
 @Composable
@@ -78,14 +78,15 @@ fun MyApplicationTheme(
         val activity = currentContext as? androidx.activity.ComponentActivity
         if (activity != null) {
             androidx.compose.runtime.SideEffect {
-                activity.enableEdgeToEdge(
-                    statusBarStyle = androidx.activity.SystemBarStyle.dark(
-                        android.graphics.Color.TRANSPARENT
-                    ),
-                    navigationBarStyle = androidx.activity.SystemBarStyle.dark(
-                        android.graphics.Color.TRANSPARENT
-                    )
-                )
+                val middleColor = colorScheme.primary
+                val window = activity.window
+                window.statusBarColor = middleColor.toArgb()
+                window.navigationBarColor = middleColor.toArgb()
+                
+                val windowInsetsController = WindowCompat.getInsetsController(window, view)
+                val isLightColor = (middleColor.red * 0.299f + middleColor.green * 0.587f + middleColor.blue * 0.114f) > 0.5f
+                windowInsetsController.isAppearanceLightStatusBars = isLightColor
+                windowInsetsController.isAppearanceLightNavigationBars = isLightColor
             }
         }
     }

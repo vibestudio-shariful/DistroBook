@@ -63,6 +63,8 @@ fun DashboardScreen(
     val dashboardFilterVal by viewModel.dashboardFilter.collectAsState()
     
     val isEnglish by viewModel.isEnglish.collectAsState()
+    val isDarkMode by viewModel.isDarkMode.collectAsState()
+    val cardGradientStart = if (isDarkMode) Color(0xFF818CF8) else Color(0xFF1E3A8A)
     
     val salesCardTitle = when (dashboardFilterVal) {
         is ReportFilter.AllTime -> if (isEnglish) "All-time Total Sales" else "সব সময়ের মোট বিক্রি"
@@ -111,8 +113,8 @@ fun DashboardScreen(
                         .background(
                             brush = androidx.compose.ui.graphics.Brush.linearGradient(
                                 colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.secondary
+                                    cardGradientStart,
+                                    MaterialTheme.colorScheme.tertiary
                                 )
                             )
                         )
@@ -399,7 +401,7 @@ fun DashboardScreen(
                         .background(
                             brush = Brush.linearGradient(
                                 colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
+                                    cardGradientStart,
                                     MaterialTheme.colorScheme.tertiary
                                 )
                             )
@@ -494,22 +496,22 @@ fun DashboardScreen(
                 QuickActionButton(
                     icon = Icons.Outlined.PostAdd,
                     label = t(viewModel, "নতুন অর্ডার", "New Order"),
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    iconBgColor = MaterialTheme.colorScheme.surfaceVariant,
-                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                    gradientColors = listOf(cardGradientStart, MaterialTheme.colorScheme.tertiary),
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    iconBgColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                    iconColor = MaterialTheme.colorScheme.onPrimary,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                     modifier = Modifier.weight(1.0f).testTag("action_create_order"),
                     onClick = onCreateOrderClick
                 )
                 QuickActionButton(
                     icon = Icons.Outlined.Inventory,
                     label = t(viewModel, "প্রোডাক্ট লিস্ট", "Products"),
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    iconBgColor = MaterialTheme.colorScheme.surfaceVariant,
-                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                    gradientColors = listOf(cardGradientStart, MaterialTheme.colorScheme.tertiary),
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    iconBgColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                    iconColor = MaterialTheme.colorScheme.onPrimary,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                     modifier = Modifier.weight(1.0f).testTag("action_manage_products"),
                     onClick = {
                         viewModel.setShowOnlyLowStockInProducts(false)
@@ -519,11 +521,11 @@ fun DashboardScreen(
                 QuickActionButton(
                     icon = Icons.Outlined.Storefront,
                     label = t(viewModel, "দোকান ও বকেয়া", "Shops & Dues"),
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    iconBgColor = MaterialTheme.colorScheme.surfaceVariant,
-                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                    gradientColors = listOf(cardGradientStart, MaterialTheme.colorScheme.tertiary),
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    iconBgColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                    iconColor = MaterialTheme.colorScheme.onPrimary,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                     modifier = Modifier.weight(1.0f).testTag("action_manage_shops"),
                     onClick = onManageShopsClick
                 )
@@ -656,7 +658,7 @@ fun DashboardScreen(
 fun QuickActionButton(
     icon: ImageVector,
     label: String,
-    containerColor: Color,
+    gradientColors: List<Color>,
     contentColor: Color,
     iconBgColor: Color,
     iconColor: Color,
@@ -680,10 +682,7 @@ fun QuickActionButton(
                 .fillMaxSize()
                 .background(
                     brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                        colors = listOf(
-                            containerColor,
-                            containerColor.copy(alpha = 0.9f)
-                        )
+                        colors = gradientColors
                     )
                 )
                 .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(20.dp))

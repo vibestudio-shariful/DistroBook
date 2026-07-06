@@ -128,7 +128,7 @@ fun ShopsScreen(
                         Icon(
                             imageVector = Icons.Outlined.Storefront,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                             modifier = Modifier.size(64.dp)
                         )
                         Text(
@@ -138,13 +138,14 @@ fun ShopsScreen(
                                 t(viewModel, "কোনো দোকান এন্ট্রি করা হয়নি!", "No shops entered yet!")
                             },
                             style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.outline
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = t(viewModel, "নতুন দোকান যোগ করতে নিচের '+' বাটনে চাপুন।", "Press the '+' button below to add a new shop."),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -480,16 +481,30 @@ fun ShopItemRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                        )
+                    )
+                )
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
+                .padding(16.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                 Row(
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
@@ -630,6 +645,7 @@ fun ShopItemRow(
             }
         }
     }
+}
 }
 
 @Composable

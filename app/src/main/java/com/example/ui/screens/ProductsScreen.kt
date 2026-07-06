@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -156,7 +157,7 @@ fun ProductsScreen(
                         Icon(
                             imageVector = Icons.Outlined.Inventory,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                             modifier = Modifier.size(64.dp)
                         )
                         Text(
@@ -166,13 +167,14 @@ fun ProductsScreen(
                                 t(viewModel, "কোনো প্রোডাক্ট এন্ট্রি করা হয়নি!", "No products entered yet!")
                             },
                             style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.outline
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = t(viewModel, "নতুন প্রোডাক্ট যোগ করতে নিচের '+' বাটনে চাপুন।", "Press the '+' button below to add a new product."),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -281,57 +283,95 @@ fun ProductItemRow(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header: Name & Action buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = product.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                        )
                     )
-                    if (product.description.isNotBlank()) {
+                )
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
+                .padding(16.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Header: Name & Action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = product.description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline,
-                            maxLines = 2,
+                            text = product.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                        if (product.description.isNotBlank()) {
+                            Text(
+                                text = product.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    // Quick Stock adjustment buttons
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        IconButton(onClick = { onQuickStockUpdate(-1) }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Remove, contentDescription = "Deduct Stock", modifier = Modifier.size(16.dp))
+                        }
+                        Text(
+                            text = product.stock.toString(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                        IconButton(onClick = { onQuickStockUpdate(1) }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Stock", modifier = Modifier.size(16.dp))
+                        }
                     }
                 }
-
-                // Quick Stock adjustment buttons
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    IconButton(onClick = { onQuickStockUpdate(-1) }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Remove, contentDescription = "Deduct Stock", modifier = Modifier.size(16.dp))
-                    }
                     Text(
-                        text = if (isEnglish) "Update Stock" else "স্টক আপডেট",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        text = "৳${String.format("%,.2f", product.price)} / ${product.unit}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Black
                     )
-                    IconButton(onClick = { onQuickStockUpdate(1) }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Stock", modifier = Modifier.size(16.dp))
+                    
+                    Row {
+                        IconButton(onClick = onEditClick) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
+                        }
+                        IconButton(onClick = onDeleteClick) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }

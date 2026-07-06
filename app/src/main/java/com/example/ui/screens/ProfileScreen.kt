@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -370,32 +372,203 @@ fun ProfileScreen(
     }
 
     // Log Feedback Dialog
+    var showDriveBackupsDialog by remember { mutableStateOf(false) }
     if (showLogDialog) {
         val logs = remember { LogManager.getLogs() }
         AlertDialog(
             onDismissRequest = { showLogDialog = false },
-            title = { Text("Application Logs") },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.BugReport, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                    Text(t(viewModel, "সিস্টেম এরর লগ", "System Error Logs"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            },
             text = {
-                LazyColumn(modifier = Modifier.height(300.dp)) {
-                    items(logs) { log ->
-                        Text(text = log, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Divider()
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (logs.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                            Text(t(viewModel, "কোনো এরর পাওয়া যায়নি। অ্যাপটি ভালো চলছে!", "No errors found. App is running smoothly!"), textAlign = TextAlign.Center, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    } else {
+                        LazyColumn(modifier = Modifier.height(300.dp).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).padding(8.dp)) {
+                            items(logs) { log ->
+                                Text(text = log, fontSize = 10.sp, color = MaterialTheme.colorScheme.error, fontFamily = FontFamily.Monospace, lineHeight = 14.sp)
+                                Divider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                            }
+                        }
+                    }
+                    
+                    Text(t(viewModel, "সাপোর্ট পেতে লগ পাঠান:", "Send logs for support:"), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                try {
+                                    val logText = if (logs.isEmpty()) "No errors found." else logs.joinToString("\n")
+                                    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:connect.shariful@gmail.com")).apply {
+                                        putExtra(Intent.EXTRA_SUBJECT, "Distro-Book Error Logs")
+                                        putExtra(Intent.EXTRA_TEXT, logText)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Email app not found", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Email", fontSize = 12.sp)
+                        }
+                        
+                        Button(
+                            onClick = {
+                                try {
+                                    val logText = if (logs.isEmpty()) "No errors found." else logs.joinToString("\n")
+                                    val uri = Uri.parse("https://wa.me/8801768899599?text=${Uri.encode("Distro-Book Error Logs:\n\n$logText")}")
+                                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Default.Phone, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("WhatsApp", fontSize = 12.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showLogDialog = false }) { Text(t(viewModel, "বন্ধ করুন", "Close")) }
+            }
+        )
+    }
+
+    // Cloud backup list dialog
+    if (showDriveBackupsDialog) {
+        val driveBackups by viewModel.googleDriveBackups.collectAsState()
+        val isDriveLoading by viewModel.isDriveLoading.collectAsState()
+        
+        AlertDialog(
+            onDismissRequest = { showDriveBackupsDialog = false },
+            title = {
+                Text(
+                    text = t(viewModel, "ক্লাউড ব্যাকআপ তালিকা", "Cloud Backup List"),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                if (isDriveLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(150.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else if (driveBackups.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = t(viewModel, "কোনো ক্লাউড ব্যাকআপ পাওয়া যায়নি!", "No cloud backups found!"),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(driveBackups) { backup ->
+                            if (backup != null && backup.name != null) {
+                                val displayName = try {
+                                    val parts = backup.name.replace("distrobook_backup_", "").replace(".json", "")
+                                    val parser = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                                    val formatter = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+                                    val date = parser.parse(parts)
+                                    if (date != null) formatter.format(date) else backup.name
+                                } catch (e: Exception) {
+                                    backup.name
+                                }
+
+                                val sizeInKb = String.format("%.1f", backup.size / 1024.0)
+
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            pendingCloudRestoreBackup = backup
+                                        },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    ),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.CloudDownload,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                            Column {
+                                                Text(
+                                                    text = displayName,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Text(
+                                                    text = "$sizeInKb KB",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+
+                                        IconButton(
+                                            onClick = {
+                                                pendingCloudDeleteBackup = backup
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete Backup",
+                                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    // Send Feedback Intent
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_SUBJECT, "App Feedback/Logs")
-                        putExtra(Intent.EXTRA_TEXT, logs.joinToString("\n"))
-                    }
-                    context.startActivity(Intent.createChooser(intent, "Send Feedback"))
-                }) { Text("Send Feedback") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogDialog = false }) { Text("Close") }
+                TextButton(onClick = { showDriveBackupsDialog = false }) {
+                    Text(text = t(viewModel, "বাতিল", "Cancel"))
+                }
             }
         )
     }
@@ -608,45 +781,58 @@ fun ProfileScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Row(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .background(
+                                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.surface,
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    )
+                                )
+                            )
+                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                            .padding(16.dp)
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Column {
-                                Text(
-                                    text = t(viewModel, "ডার্ক মোড", "Dark Mode"),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                                Text(
-                                    text = t(viewModel, "চোখের সুরক্ষায় ডার্ক থিম সক্রিয় করুন", "Enable dark theme to reduce eye strain"),
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Column {
+                                    Text(
+                                        text = t(viewModel, "ডার্ক মোড", "Dark Mode"),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = t(viewModel, "চোখের সুরক্ষায় ডার্ক থিম সক্রিয় করুন", "Enable dark theme to reduce eye strain"),
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
+                            Switch(
+                                checked = isDarkMode,
+                                onCheckedChange = { viewModel.setDarkMode(it) }
+                            )
                         }
-                        Switch(
-                            checked = isDarkMode,
-                            onCheckedChange = { viewModel.setDarkMode(it) }
-                        )
                     }
                 }
             }
@@ -655,72 +841,85 @@ fun ProfileScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Translate,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                            .background(
+                                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.surface,
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    )
+                                )
                             )
-                            Column {
-                                Text(
-                                    text = if (isEnglish) "App Language / অ্যাপের ভাষা" else "অ্যাপের ভাষা / App Language",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = t(viewModel, "আপনার পছন্দসই ভাষা নির্বাচন করুন", "Select your preferred application language"),
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-
-                        Row(
+                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                            .padding(16.dp)
+                    ) {
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Bangla button
-                            Button(
-                                onClick = { viewModel.setLanguage(false) },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (!isEnglish) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = if (!isEnglish) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                                border = if (isEnglish) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)) else null
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Text("বাংলা (Bangla)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Icon(
+                                    imageVector = Icons.Default.Translate,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Column {
+                                    Text(
+                                        text = if (isEnglish) "App Language / অ্যাপের ভাষা" else "অ্যাপের ভাষা / App Language",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = t(viewModel, "আপনার পছন্দসই ভাষা নির্বাচন করুন", "Select your preferred application language"),
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
 
-                            // English button
-                            Button(
-                                onClick = { viewModel.setLanguage(true) },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isEnglish) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = if (isEnglish) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                                border = if (!isEnglish) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)) else null
+                            Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Text("English", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                // Bangla button
+                                Button(
+                                    onClick = { viewModel.setLanguage(false) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (!isEnglish) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                        contentColor = if (!isEnglish) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    ),
+                                    border = if (isEnglish) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)) else null
+                                ) {
+                                    Text("বাংলা (Bangla)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                }
+
+                                // English button
+                                Button(
+                                    onClick = { viewModel.setLanguage(true) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isEnglish) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                        contentColor = if (isEnglish) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    ),
+                                    border = if (!isEnglish) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)) else null
+                                ) {
+                                    Text("English", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                }
                             }
                         }
                     }
@@ -734,8 +933,6 @@ fun ProfileScreen(
                 val driveBackups by viewModel.googleDriveBackups.collectAsState()
                 val isDriveLoading by viewModel.isDriveLoading.collectAsState()
                 
-                var showDriveBackupsDialog by remember { mutableStateOf(false) }
-
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -797,21 +994,6 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 lineHeight = 16.sp
                             )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Button(
-                                    onClick = { showLogDialog = true },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
-                                ) {
-                                    Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(t(viewModel, "লগ দেখুন / ফিডব্যাক পাঠান", "View Logs / Send Feedback"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                }
-                            }
-
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -1018,126 +1200,56 @@ fun ProfileScreen(
                         }
                     }
                 }
+            }
 
-                // Cloud backup list dialog
-                if (showDriveBackupsDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showDriveBackupsDialog = false },
-                        title = {
-                            Text(
-                                text = t(viewModel, "ক্লাউড ব্যাকআপ তালিকা", "Cloud Backup List"),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        },
-                        text = {
-                            if (isDriveLoading) {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().height(150.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
-                            } else if (driveBackups.isEmpty()) {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().height(100.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = t(viewModel, "কোনো ক্লাউড ব্যাকআপ পাওয়া যায়নি!", "No cloud backups found!"),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            } else {
-                                LazyColumn(
-                                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    items(driveBackups) { backup ->
-                                        if (backup != null && backup.name != null) {
-                                            val displayName = try {
-                                                val parts = backup.name.replace("distrobook_backup_", "").replace(".json", "")
-                                                val parser = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-                                                val formatter = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
-                                                val date = parser.parse(parts)
-                                                if (date != null) formatter.format(date) else backup.name
-                                            } catch (e: Exception) {
-                                                backup.name
-                                            }
-
-                                            val sizeInKb = String.format("%.1f", backup.size / 1024.0)
-
-                                            Card(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable {
-                                                        pendingCloudRestoreBackup = backup
-                                                    },
-                                                colors = CardDefaults.cardColors(
-                                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                                ),
-                                                shape = RoundedCornerShape(10.dp)
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(12.dp),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                        modifier = Modifier.weight(1f)
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.CloudDownload,
-                                                            contentDescription = null,
-                                                            tint = MaterialTheme.colorScheme.primary,
-                                                            modifier = Modifier.size(24.dp)
-                                                        )
-                                                        Column {
-                                                            Text(
-                                                                text = displayName,
-                                                                style = MaterialTheme.typography.bodyMedium,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = MaterialTheme.colorScheme.onSurface
-                                                            )
-                                                            Text(
-                                                                text = "$sizeInKb KB",
-                                                                style = MaterialTheme.typography.bodySmall,
-                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                            )
-                                                        }
-                                                    }
-
-                                                    IconButton(
-                                                        onClick = {
-                                                            pendingCloudDeleteBackup = backup
-                                                        }
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Delete,
-                                                            contentDescription = "Delete Backup",
-                                                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+            // Section: App Error Logs (New Position)
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.2f)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(Icons.Default.BugReport, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                Text(
+                                    text = t(viewModel, "অ্যাপ এরর লগ (সাপোর্ট)", "App Error Logs (Support)"),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
                             }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { showDriveBackupsDialog = false }) {
-                                Text(text = t(viewModel, "বাতিল", "Cancel"))
+                            Text(
+                                text = t(
+                                    viewModel,
+                                    "অ্যাপ ব্যবহারে কোনো কারিগরি সমস্যা হলে নিচের বাটনে ক্লিক করে এরর লগগুলো আমাদের ইমেইল বা হোয়াটসঅ্যাপে পাঠাতে পারেন। এটি আমাদের সমস্যা সমাধানে সাহায্য করবে।",
+                                    "If you face any technical issues, click the button below to send error logs via Email or WhatsApp. This helps us fix bugs quickly."
+                                ),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 16.sp
+                            )
+                            Button(
+                                onClick = { showLogDialog = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f))
+                            ) {
+                                Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(t(viewModel, "এরর লগ রিপোর্ট চেক করুন", "Check Error Log Reports"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
                         }
-                    )
+                    }
                 }
-            }
 
             // Section 4: App Developer Info Card
             item {

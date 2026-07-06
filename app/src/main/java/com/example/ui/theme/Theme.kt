@@ -82,14 +82,9 @@ fun MyApplicationTheme(
                     statusBarStyle = androidx.activity.SystemBarStyle.dark(
                         android.graphics.Color.TRANSPARENT
                     ),
-                    navigationBarStyle = if (darkTheme) {
-                        androidx.activity.SystemBarStyle.dark(colorScheme.primary.toArgb())
-                    } else {
-                        androidx.activity.SystemBarStyle.light(
-                            colorScheme.primary.toArgb(),
-                            colorScheme.primary.toArgb()
-                        )
-                    }
+                    navigationBarStyle = androidx.activity.SystemBarStyle.dark(
+                        android.graphics.Color.TRANSPARENT
+                    )
                 )
             }
         }

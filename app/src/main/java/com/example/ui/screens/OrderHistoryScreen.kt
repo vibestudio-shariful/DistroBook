@@ -454,18 +454,33 @@ fun OrderHistoryScreen(
                     // Receipt Header Slip
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(text = if (isEnglish) "Memo No: #${order.id}" else "মেমো নং: #${order.id}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Text(text = if (isEnglish) "Shop: ${order.shopName}" else "ক্রেতা: ${order.shopName}", fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                            Text(text = if (isEnglish) "Date: $dateStr" else "তারিখ: $dateStr", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            if (order.remarks.isNotBlank()) {
-                                Text(text = if (isEnglish) "Note: ${order.remarks}" else "নোট: ${order.remarks}", fontSize = 11.sp, fontWeight = FontWeight.Medium)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                        )
+                    )
+                )
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                .padding(12.dp)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                                Text(text = if (isEnglish) "Memo No: #${order.id}" else "মেমো নং: #${order.id}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text(text = if (isEnglish) "Shop: ${order.shopName}" else "ক্রেতা: ${order.shopName}", fontSize = 16.sp, fontWeight = FontWeight.Black)
+                                Text(text = if (isEnglish) "Date: $dateStr" else "তারিখ: $dateStr", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (order.remarks.isNotBlank()) {
+                                    Text(text = if (isEnglish) "Note: ${order.remarks}" else "নোট: ${order.remarks}", fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                }
                             }
                         }
                     }

@@ -23,12 +23,11 @@ object GoogleDriveHelper {
 
     private fun log(message: String) {
         Log.d(TAG, message)
-        LogManager.addLog(message)
     }
 
     private fun logError(message: String, e: Throwable) {
         Log.e(TAG, message, e)
-        LogManager.addLog("$message: ${e.message}")
+        LogManager.addErrorLog(TAG, message, e)
     }
 
     // Retrieve OAuth2 Token

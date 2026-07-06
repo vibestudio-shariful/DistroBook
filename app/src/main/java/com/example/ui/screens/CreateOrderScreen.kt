@@ -319,8 +319,8 @@ fun CreateOrderScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Outlined.Inventory, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
-                            Text(if (isEnglish) "Please add some products first!" else "প্রথমে কিছু প্রোডাক্ট এন্ট্রি করে নিন!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Icon(Icons.Outlined.Inventory, contentDescription = null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), modifier = Modifier.size(48.dp))
+                            Text(if (isEnglish) "Please add some products first!" else "প্রথমে কিছু প্রোডাক্ট এন্ট্রি করে নিন!", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -928,27 +928,43 @@ fun CreateOrderScreen(
                                         },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(
-                                        containerColor = if (selectedShop?.id == shop.id) {
-                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
-                                        } else {
-                                            MaterialTheme.colorScheme.surface
-                                        }
+                                        containerColor = Color.Transparent
                                     ),
-                                    border = BorderStroke(
-                                        width = 1.dp,
-                                        color = if (selectedShop?.id == shop.id) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                                        }
-                                    )
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                 ) {
-                                    Row(
+                                    Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                            .background(
+                                                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                                    colors = if (selectedShop?.id == shop.id) {
+                                                        listOf(
+                                                            MaterialTheme.colorScheme.primaryContainer,
+                                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                                                        )
+                                                    } else {
+                                                        listOf(
+                                                            MaterialTheme.colorScheme.surface,
+                                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                                        )
+                                                    }
+                                                )
+                                            )
+                                            .border(
+                                                width = 1.dp,
+                                                color = if (selectedShop?.id == shop.id) {
+                                                    MaterialTheme.colorScheme.primary
+                                                } else {
+                                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                                                },
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                            .padding(12.dp)
                                     ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
                                         Box(
                                             modifier = Modifier
                                                 .size(40.dp)
@@ -1011,6 +1027,7 @@ fun CreateOrderScreen(
                                         }
                                     }
                                 }
+                            }
                             }
                         }
                     }

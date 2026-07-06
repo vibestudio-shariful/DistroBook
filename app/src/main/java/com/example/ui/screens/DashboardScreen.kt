@@ -144,8 +144,8 @@ fun DashboardScreen(
                         Text(
                             text = t(viewModel, "সরবরাহকারী ড্যাশবোর্ড", "Supplier Dashboard"),
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-                            fontWeight = FontWeight.Bold
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.ExtraBold
                         )
                         Text(
                             text = userNameVal,
@@ -370,81 +370,96 @@ fun DashboardScreen(
                     },
                 shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary
+                                )
+                            )
+                        )
+                        .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(28.dp))
                         .padding(24.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column {
-                            Text(
-                                text = salesCardTitle,
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = formattedSales,
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = (-0.5).sp
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
-                                .padding(8.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Top
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.TrendingUp,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(24.dp)
-                            )
+                            Column {
+                                Text(
+                                    text = salesCardTitle,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f),
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = formattedSales,
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = (-0.5).sp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f))
+                                    .padding(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.TrendingUp,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f))
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = t(viewModel, "অর্ডার: ${recentOrders.size}টি", "Orders: ${recentOrders.size}"),
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f))
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = t(viewModel, "দোকান: ${stats.activeShops}টি", "Shops: ${stats.activeShops}"),
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f))
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = t(viewModel, "অর্ডার: ${recentOrders.size}টি", "Orders: ${recentOrders.size}"),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f))
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = t(viewModel, "দোকান: ${stats.activeShops}টি", "Shops: ${stats.activeShops}"),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -626,45 +641,57 @@ fun QuickActionButton(
 ) {
     Card(
         modifier = modifier
-            .height(104.dp)
+            .height(110.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = containerColor,
+            containerColor = Color.Transparent,
             contentColor = contentColor
         ),
-        border = border,
-        elevation = CardDefaults.cardElevation(0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(
+                            containerColor,
+                            containerColor.copy(alpha = 0.9f)
+                        )
+                    )
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(20.dp))
                 .padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(iconBgColor),
-                contentAlignment = Alignment.Center
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(18.dp)
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(iconBgColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = label,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = label,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 1
-            )
         }
     }
 }
@@ -688,8 +715,7 @@ fun MetricCard(
             containerColor = Color.Transparent,
             contentColor = contentColor
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
-        elevation = CardDefaults.cardElevation(0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Box(
             modifier = Modifier
@@ -698,11 +724,12 @@ fun MetricCard(
                     brush = androidx.compose.ui.graphics.Brush.linearGradient(
                         colors = listOf(
                             containerColor,
-                            containerColor.copy(alpha = 0.8f)
+                            containerColor.copy(alpha = 0.85f)
                         )
                     )
                 )
-                .padding(16.dp)
+                .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
+                .padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -712,30 +739,30 @@ fun MetricCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor.copy(alpha = 0.6f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = contentColor,
                         letterSpacing = 0.5.sp
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = value,
-                        fontSize = 22.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Black,
                         color = contentColor
                     )
                 }
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(contentColor.copy(alpha = 0.1f)),
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(contentColor.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(26.dp),
                         tint = contentColor
                     )
                 }
@@ -755,36 +782,56 @@ fun MiniInfoCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
-        elevation = CardDefaults.cardElevation(0.dp)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                    )
+                )
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                .padding(14.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconColor,
-                modifier = Modifier.size(24.dp)
-            )
-            Column {
-                Text(
-                    text = title,
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = value,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(iconColor.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = title,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = value,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
     }
@@ -803,22 +850,34 @@ fun RecentOrderRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
+                    )
+                )
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
+                .padding(14.dp)
         ) {
             Row(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                 // Circular icon or Shop image
                 Box(
                     modifier = Modifier
@@ -910,6 +969,7 @@ fun RecentOrderRow(
             }
         }
     }
+}
 }
 
 @Composable

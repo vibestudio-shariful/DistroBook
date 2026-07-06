@@ -44,13 +44,23 @@ class AppRepository(
         val orderId = orderDao.insertOrder(order)
         if (deductStock) {
             // Deduct stock for each product in the order
-            val productsList = productDao.getAllProducts().first()
-            for (item in order.items) {
-                val matchingProduct = productsList.find { it.id == item.productId }
-                if (matchingProduct != null) {
-                    val updatedStock = (matchingProduct.stock - item.quantity).coerceAtLeast(0)
-                    productDao.updateStock(matchingProduct.id, updatedStock)
+            try {
+                val productsList = productDao.getAllProducts().first()
+                val items = order.items
+                if (items != null) {
+                    for (item in items) {
+                        // Safe check for type if coming from corrupted restoration
+                        if (item is OrderItem) {
+                            val matchingProduct = productsList.find { it.id == item.productId }
+                            if (matchingProduct != null) {
+                                val updatedStock = (matchingProduct.stock - item.quantity).coerceAtLeast(0)
+                                productDao.updateStock(matchingProduct.id, updatedStock)
+                            }
+                        }
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
         return orderId

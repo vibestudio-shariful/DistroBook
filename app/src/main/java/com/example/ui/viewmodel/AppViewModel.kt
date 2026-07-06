@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.*
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
+import com.example.utils.LogManager
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -60,6 +61,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val userEmail = MutableStateFlow(sharedPrefs.getString("user_email", "ইমেইল বা সোশ্যাল প্রোফাইল") ?: "ইমেইল বা সোশ্যাল প্রোফাইল")
     val userAddress = MutableStateFlow(sharedPrefs.getString("user_address", "আপনার ঠিকানা") ?: "আপনার ঠিকানা")
     val userAvatarPath = MutableStateFlow(sharedPrefs.getString("user_avatar_path", null))
+
+    // Professional Error Event for UI
+    private val _errorEvent = MutableSharedFlow<Pair<String, String>>() // Title, Message
+    val errorEvent = _errorEvent.asSharedFlow()
+
+    fun triggerError(title: String, message: String) {
+        viewModelScope.launch {
+            _errorEvent.emit(Pair(title, message))
+        }
+    }
+
+    private val moshi = Moshi.Builder()
+        .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory())
+        .build()
+
+    private val payloadAdapter = moshi.adapter(BackupPayload::class.java)
 
     // Google Drive Integration state
     val googleAccountEmail = MutableStateFlow<String?>(sharedPrefs.getString("google_account_email", null))
@@ -326,9 +343,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     shopImagesBase64 = shopImagesBase
                 )
 
-                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-                val adapter = moshi.adapter(BackupPayload::class.java)
-                val jsonString = adapter.toJson(payload)
+                val jsonString = payloadAdapter.toJson(payload)
 
                 context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                     outputStream.bufferedWriter().use { it.write(jsonString) }
@@ -364,9 +379,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     shopImagesBase64 = shopImagesBase
                 )
 
-                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-                val adapter = moshi.adapter(BackupPayload::class.java)
-                val jsonString = adapter.toJson(payload)
+                val jsonString = payloadAdapter.toJson(payload)
 
                 // Save locally to external files dir (documents area)
                 val backupFile = File(context.getExternalFilesDir(null), "distro_book_backup.json")
@@ -399,9 +412,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     inputStream.bufferedReader().use { it.readText() }
                 } ?: throw Exception("ফাইলটি পড়া সম্ভব হয়নি")
 
-                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-                val adapter = moshi.adapter(BackupPayload::class.java)
-                val payload = adapter.fromJson(jsonString) ?: throw Exception("ভুল ফাইল ফরম্যাট")
+                val payload = try {
+                    payloadAdapter.fromJson(jsonString) ?: throw Exception("ভুল ফাইল ফরম্যাট")
+                } catch (e: Exception) {
+                    LogManager.addErrorLog("Restore", "Moshi Parsing Error: ${e.message}", e)
+                    throw Exception("ব্যাকআপ ফাইলটি এই ভার্সনের সাথে সামঞ্জস্যপূর্ণ নয়। (Parse Error)")
+                }
 
                 val restoredShopImagesMap = restorePhotos(payload.userAvatarBase64, payload.shopImagesBase64)
 
@@ -619,7 +635,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val shops = repository.allShops.first()
                 val orders = repository.allOrders.first()
 
-                val (userAvatarBase64, shopImagesBase) = getPhotosBase64(shops)
+                val (userAvatarBase64, shopImagesBase) = if (true) Pair(null, emptyMap<String, String>()) else getPhotosBase64(shops)
                 
                 val payload = BackupPayload(
                     products = products,
@@ -634,9 +650,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     shopImagesBase64 = shopImagesBase
                 )
                 
-                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-                val adapter = moshi.adapter(BackupPayload::class.java)
-                val json = adapter.toJson(payload)
+                val json = payloadAdapter.toJson(payload)
                 
                 val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
                 val backupFile = File(backupDir, "Backup_$timestamp.json")
@@ -654,9 +668,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 val json = file.readText()
-                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-                val adapter = moshi.adapter(BackupPayload::class.java)
-                val payload = adapter.fromJson(json) ?: throw Exception("Invalid backup file")
+                val payload = try {
+                    payloadAdapter.fromJson(json) ?: throw Exception("Invalid backup file format")
+                } catch (e: Exception) {
+                    LogManager.addErrorLog("Restore", "Moshi Parsing Error: ${e.message}", e)
+                    throw Exception("ব্যাকআপ ফাইলটি এই ভার্সনের সাথে সামঞ্জস্যপূর্ণ নয়। (Parse Error)")
+                }
                 
                 val restoredShopImagesMap = restorePhotos(payload.userAvatarBase64, payload.shopImagesBase64)
 
@@ -733,7 +750,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val products = repository.allProducts.first()
                 val shops = repository.allShops.first()
                 val orders = repository.allOrders.first()
-                val (userAvatarBase64, shopImagesBase) = getPhotosBase64(shops)
+                // Cloud backup excludes images to keep file size small as requested
+                val userAvatarBase64: String? = null
+                val shopImagesBase: Map<String, String> = emptyMap()
 
                 val payload = BackupPayload(
                     products = products,
@@ -748,9 +767,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     shopImagesBase64 = shopImagesBase
                 )
 
-                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-                val adapter = moshi.adapter(BackupPayload::class.java)
-                val json = adapter.toJson(payload)
+                val json = payloadAdapter.toJson(payload)
 
                 try {
                     val success = com.example.utils.GoogleDriveHelper.uploadBackup(token, json)
@@ -787,6 +804,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                triggerError(
+                    if (isEnglish.value) "Backup Failed" else "ব্যাকআপ সফল হয়নি",
+                    e.message ?: "Unknown error"
+                )
                 onComplete(false, e.message ?: "Unknown error")
             } finally {
                 isDriveLoading.value = false
@@ -833,9 +854,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     return@launch
                 }
 
-                val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-                val adapter = moshi.adapter(BackupPayload::class.java)
-                val payload = adapter.fromJson(json) ?: throw Exception("Invalid backup file format")
+                val payload = try {
+                    payloadAdapter.fromJson(json) ?: throw Exception("Invalid backup file format")
+                } catch (e: Exception) {
+                    LogManager.addErrorLog("Restore", "Moshi Parsing Error: ${e.message}", e)
+                    throw Exception("ব্যাকআপ ফাইলটি এই ভার্সনের সাথে সামঞ্জস্যপূর্ণ নয়। (Parse Error)")
+                }
 
                 val restoredShopImagesMap = restorePhotos(payload.userAvatarBase64, payload.shopImagesBase64)
 
@@ -873,6 +897,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 onComplete(true, null)
             } catch (e: Exception) {
                 e.printStackTrace()
+                triggerError(
+                    if (isEnglish.value) "Restore Failed" else "রিস্টোর সফল হয়নি",
+                    e.message ?: "Unknown error"
+                )
                 onComplete(false, e.message ?: "Unknown error")
             } finally {
                 isDriveLoading.value = false

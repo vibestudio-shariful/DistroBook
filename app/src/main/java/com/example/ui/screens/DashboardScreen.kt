@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -126,16 +127,33 @@ fun DashboardScreen(
                     ) {
                     // Profile Image
                     val userAvatarPath by viewModel.userAvatarPath.collectAsState()
-                    val avatarModel = userAvatarPath ?: R.drawable.img_user_avatar
-                    AsyncImage(
-                        model = avatarModel,
-                        contentDescription = "User Avatar",
-                        modifier = Modifier
-                            .size(54.dp)
-                            .clip(RoundedCornerShape(27.dp))
-                            .border(2.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f), RoundedCornerShape(27.dp)),
-                        contentScale = ContentScale.Crop
-                    )
+                    if (userAvatarPath != null) {
+                        AsyncImage(
+                            model = userAvatarPath,
+                            contentDescription = "User Avatar",
+                            modifier = Modifier
+                                .size(54.dp)
+                                .clip(RoundedCornerShape(27.dp))
+                                .border(2.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f), RoundedCornerShape(27.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(54.dp)
+                                .clip(RoundedCornerShape(27.dp))
+                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f))
+                                .border(2.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f), RoundedCornerShape(27.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Storefront,
+                                contentDescription = "Shop Profile",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
 
                     // User text information
                     Column(
@@ -524,8 +542,9 @@ fun DashboardScreen(
                     title = t(viewModel, "মোট বকেয়া (Due Amount)", "Total Dues"),
                     value = formattedDue,
                     icon = Icons.Outlined.AccountBalanceWallet,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    containerColor = if (isDarkMode) Color(0xFF422020) else Color(0xFFFFEBEE),
+                    contentColor = if (isDarkMode) Color(0xFFFFEBEE) else Color(0xFFB71C1C),
+                    iconColor = if (isDarkMode) Color(0xFFEF5350) else Color(0xFFD32F2F),
                     onClick = {
                         viewModel.historySelectedTab.value = 1
                         onNavigateToHistory()
@@ -536,8 +555,9 @@ fun DashboardScreen(
                     title = t(viewModel, "মোট আদায়", "Total Collected"),
                     value = formattedCollected,
                     icon = Icons.Outlined.CheckCircle,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    containerColor = if (isDarkMode) Color(0xFF203220) else Color(0xFFE8F5E9),
+                    contentColor = if (isDarkMode) Color(0xFFE8F5E9) else Color(0xFF1B5E20),
+                    iconColor = if (isDarkMode) Color(0xFF66BB6A) else Color(0xFF388E3C),
                     onClick = {
                         viewModel.historySelectedTab.value = 2
                         onNavigateToHistory()
@@ -548,8 +568,9 @@ fun DashboardScreen(
                     title = t(viewModel, "স্টক সতর্কবার্তা", "Stock Warning"),
                     value = t(viewModel, "${stats.lowStockCount} টি প্রোডাক্ট", "${stats.lowStockCount} Products"),
                     icon = Icons.Outlined.ProductionQuantityLimits,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    containerColor = if (isDarkMode) Color(0xFF32281A) else Color(0xFFFFF3E0),
+                    contentColor = if (isDarkMode) Color(0xFFFFF3E0) else Color(0xFFE65100),
+                    iconColor = if (isDarkMode) Color(0xFFFFA726) else Color(0xFFF57C00),
                     onClick = {
                         viewModel.setShowOnlyLowStockInProducts(true)
                         onManageProductsClick()
@@ -703,67 +724,73 @@ fun MetricCard(
     icon: ImageVector,
     containerColor: Color,
     contentColor: Color,
+    iconColor: Color = contentColor,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
+    val isDark = isSystemInDarkTheme()
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent,
             contentColor = contentColor
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 4.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                        colors = listOf(
-                            containerColor,
-                            containerColor.copy(alpha = 0.85f)
-                        )
+                    brush = Brush.horizontalGradient(
+                        colors = if (isDark) {
+                            listOf(containerColor, containerColor.copy(alpha = 0.8f))
+                        } else {
+                            listOf(Color.White, Color.White)
+                        }
                     )
                 )
-                .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
+                .then(
+                    if (!isDark) Modifier.border(1.5.dp, containerColor.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+                    else Modifier.border(1.dp, contentColor.copy(alpha = 0.1f), RoundedCornerShape(24.dp))
+                )
                 .padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = contentColor,
+                        color = contentColor.copy(alpha = 0.8f),
                         letterSpacing = 0.5.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = value,
-                        fontSize = 24.sp,
+                        fontSize = 28.sp,
                         fontWeight = FontWeight.Black,
                         color = contentColor
                     )
                 }
+                
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(contentColor.copy(alpha = 0.15f)),
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(iconColor.copy(alpha = if (isDark) 0.15f else 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(26.dp),
-                        tint = contentColor
+                        modifier = Modifier.size(30.dp),
+                        tint = iconColor
                     )
                 }
             }

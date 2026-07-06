@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.*
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -31,8 +39,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -86,6 +96,116 @@ fun MainAppScreen() {
   val currentRoute = navBackStackEntry?.destination?.route
   val isEnglish by viewModel.isEnglish.collectAsState()
   val isDarkMode by viewModel.isDarkMode.collectAsState()
+
+  // Global Error Dialog State
+  val context = LocalContext.current
+  var errorDialogState by remember { mutableStateOf<Pair<String, String>?>(null) }
+  
+  LaunchedEffect(Unit) {
+      viewModel.errorEvent.collect { error ->
+          errorDialogState = error
+      }
+  }
+
+  if (errorDialogState != null) {
+      val (title, message) = errorDialogState!!
+      AlertDialog(
+          onDismissRequest = { errorDialogState = null },
+          icon = { Icon(Icons.Default.ReportProblem, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+          title = {
+              Text(
+                  text = title,
+                  fontWeight = FontWeight.Black,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth()
+              )
+          },
+          text = {
+              Column(
+                  verticalArrangement = Arrangement.spacedBy(12.dp),
+                  horizontalAlignment = Alignment.CenterHorizontally
+              ) {
+                  Text(
+                      text = message,
+                      style = MaterialTheme.typography.bodyLarge,
+                      textAlign = TextAlign.Center,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                  
+                  var showDetails by remember { mutableStateOf(false) }
+                  
+                  TextButton(onClick = { showDetails = !showDetails }) {
+                      Text(if (isEnglish) (if (showDetails) "Hide Log" else "Show Log Details") else (if (showDetails) "লগ লুকান" else "লগ ডিটেইলস দেখুন"))
+                  }
+                  
+                  if (showDetails) {
+                      Surface(
+                          color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
+                          shape = RoundedCornerShape(12.dp),
+                          modifier = Modifier.fillMaxWidth(),
+                          border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
+                      ) {
+                          Column(modifier = Modifier.padding(12.dp)) {
+                              Text(
+                                  text = if (isEnglish) "System Log:" else "সিস্টেম লগ:",
+                                  style = MaterialTheme.typography.labelSmall,
+                                  fontWeight = FontWeight.Bold,
+                                  color = MaterialTheme.colorScheme.error
+                              )
+                              Spacer(modifier = Modifier.height(4.dp))
+                              Text(
+                                  text = message,
+                                  style = MaterialTheme.typography.bodySmall,
+                                  fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                  color = MaterialTheme.colorScheme.error
+                              )
+                          }
+                      }
+                  }
+                  
+                  Text(
+                      text = if (isEnglish) "Our team is ready to help if this issue persists." else "সমস্যাটি সমাধান না হলে আমাদের সহায়তা টিমের সাথে যোগাযোগ করতে পারেন।",
+                      style = MaterialTheme.typography.labelMedium,
+                      textAlign = TextAlign.Center,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                  )
+              }
+          },
+          confirmButton = {
+              Button(
+                  onClick = { errorDialogState = null },
+                  colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                  modifier = Modifier.fillMaxWidth(),
+                  shape = RoundedCornerShape(12.dp)
+              ) {
+                  Text(if (isEnglish) "Close" else "ঠিক আছে")
+              }
+          },
+          dismissButton = {
+              OutlinedButton(
+                  onClick = {
+                      try {
+                          val whatsappIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/8801768899599?text=DistroBook Error Report: $message"))
+                          context.startActivity(whatsappIntent)
+                      } catch (e: Exception) {
+                          Toast.makeText(context, "WhatsApp not found", Toast.LENGTH_SHORT).show()
+                      }
+                      errorDialogState = null
+                  },
+                  modifier = Modifier.fillMaxWidth(),
+                  shape = RoundedCornerShape(12.dp),
+                  border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+              ) {
+                  Icon(Icons.Default.Feedback, contentDescription = null, modifier = Modifier.size(18.dp))
+                  Spacer(modifier = Modifier.width(8.dp))
+                  Text(if (isEnglish) "Contact Support" else "সাপোর্টে কথা বলুন")
+              }
+          },
+          shape = RoundedCornerShape(28.dp),
+          containerColor = MaterialTheme.colorScheme.surface,
+          tonalElevation = 8.dp
+      )
+  }
 
   Scaffold(
     modifier = Modifier.fillMaxSize(),
@@ -215,7 +335,27 @@ fun MainAppScreen() {
     NavHost(
       navController = navController,
       startDestination = "dashboard",
-      modifier = Modifier.padding(innerPadding)
+      modifier = Modifier.padding(innerPadding),
+      enterTransition = {
+          fadeIn(animationSpec = tween(300)) + slideIntoContainer(
+              AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(300)
+          )
+      },
+      exitTransition = {
+          fadeOut(animationSpec = tween(300)) + slideOutOfContainer(
+              AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(300)
+          )
+      },
+      popEnterTransition = {
+          fadeIn(animationSpec = tween(300)) + slideIntoContainer(
+              AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(300)
+          )
+      },
+      popExitTransition = {
+          fadeOut(animationSpec = tween(300)) + slideOutOfContainer(
+              AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(300)
+          )
+      }
     ) {
       composable("dashboard") {
         DashboardScreen(
@@ -269,14 +409,15 @@ data class NavigationItem(
 
 @Composable
 fun SplashScreen(isDarkMode: Boolean, isEnglish: Boolean, onTimeout: () -> Unit) {
-  val scale = remember { Animatable(0.6f) }
+  val scale = remember { Animatable(0.8f) }
   val alpha = remember { Animatable(0f) }
+  val translateY = remember { Animatable(20f) }
 
   LaunchedEffect(key1 = true) {
     launch {
       scale.animateTo(
         targetValue = 1f,
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+        animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing)
       )
     }
     launch {
@@ -285,93 +426,139 @@ fun SplashScreen(isDarkMode: Boolean, isEnglish: Boolean, onTimeout: () -> Unit)
         animationSpec = tween(durationMillis = 1000)
       )
     }
-    delay(2000) // Beautiful delay
+    launch {
+      translateY.animateTo(
+        targetValue = 0f,
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+      )
+    }
+    delay(2500)
     onTimeout()
   }
 
   val gradientColors = if (isDarkMode) {
-    listOf(Color(0xFF0F091D), Color(0xFF1F1235))
+    listOf(Color(0xFF0D0221), Color(0xFF190E4F))
   } else {
-    listOf(Color(0xFFFAF5FF), Color(0xFFF3E8FF))
+    listOf(Color(0xFFF0F4FF), Color(0xFFE0E7FF))
   }
 
   Box(
     modifier = Modifier
       .fillMaxSize()
-      .background(Brush.verticalGradient(gradientColors)),
+      .background(Brush.radialGradient(
+        colors = gradientColors,
+        center = androidx.compose.ui.geometry.Offset.Unspecified,
+        radius = Float.POSITIVE_INFINITY
+      )),
     contentAlignment = Alignment.Center
   ) {
     Column(
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center,
-      modifier = Modifier.padding(24.dp)
+      modifier = Modifier
+        .padding(24.dp)
+        .offset(y = translateY.value.dp)
     ) {
-      // Modern circular icon pack logo
-      Image(
-        painter = painterResource(id = R.drawable.ic_launcher_circle_logo_1783267887935),
-        contentDescription = "Logo",
+      // Modern circular icon pack logo with subtle glow
+      Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-          .size(130.dp)
+          .size(150.dp)
           .scale(scale.value)
           .alpha(alpha.value)
-          .clip(CircleShape)
-      )
+      ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            shape = CircleShape,
+            color = if (isDarkMode) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.05f)
+        ) {}
+        Image(
+          painter = painterResource(id = R.drawable.ic_launcher_circle_logo_1783267887935),
+          contentDescription = "Logo",
+          modifier = Modifier
+            .size(120.dp)
+            .clip(CircleShape)
+        )
+      }
 
-      Spacer(modifier = Modifier.height(24.dp))
+      Spacer(modifier = Modifier.height(32.dp))
 
-      // App name
+      // App name with letter spacing
       Text(
-        text = if (isEnglish) "DistroBook" else "ডিস্ট্রো-বুক",
-        fontSize = 32.sp,
-        fontWeight = FontWeight.ExtraBold,
-        color = if (isDarkMode) Color.White else Color(0xFF5B21B6),
+        text = if (isEnglish) "DISTRO BOOK" else "ডিস্ট্রো-বুক",
+        fontSize = 36.sp,
+        fontWeight = FontWeight.Black,
+        letterSpacing = 2.sp,
+        color = if (isDarkMode) Color.White else Color(0xFF1E3A8A),
         modifier = Modifier.alpha(alpha.value)
       )
 
-      Spacer(modifier = Modifier.height(8.dp))
+      Spacer(modifier = Modifier.height(12.dp))
 
       // Subtitle
-      Text(
-        text = if (isEnglish) "Distribution Ledger & Memo Manager" else "দোকান সাপ্লাই ও মেমো ডায়েরি",
-        fontSize = 14.sp,
-        fontWeight = FontWeight.Medium,
-        color = if (isDarkMode) Color(0xFFC4B5FD) else Color(0xFF6D28D9),
-        textAlign = TextAlign.Center,
-        modifier = Modifier.alpha(alpha.value)
-      )
+      Surface(
+          color = if (isDarkMode) Color(0xFF312E81) else Color(0xFFDBEAFE),
+          shape = RoundedCornerShape(12.dp),
+          modifier = Modifier.alpha(alpha.value)
+      ) {
+          Text(
+            text = if (isEnglish) "Distribution & Ledger Management" else "দোকান সাপ্লাই ও মেমো ডায়েরি",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (isDarkMode) Color(0xFFE0E7FF) else Color(0xFF1E40AF),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+          )
+      }
 
-      Spacer(modifier = Modifier.height(40.dp))
+      Spacer(modifier = Modifier.height(64.dp))
 
-      // Progress bar
-      CircularProgressIndicator(
-        color = if (isDarkMode) Color(0xFFA78BFA) else Color(0xFF7C3AED),
-        strokeWidth = 3.dp,
-        modifier = Modifier
-          .size(32.dp)
-          .alpha(alpha.value)
-      )
+      // Modern dot loading indicator
+      Row(
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          modifier = Modifier.alpha(alpha.value)
+      ) {
+          repeat(3) { index ->
+              val dotAlpha = remember { Animatable(0.2f) }
+              LaunchedEffect(Unit) {
+                  delay(index * 150L)
+                  while (true) {
+                      dotAlpha.animateTo(1f, tween(500))
+                      dotAlpha.animateTo(0.2f, tween(500))
+                  }
+              }
+              Box(
+                  modifier = Modifier
+                      .size(8.dp)
+                      .clip(CircleShape)
+                      .background(if (isDarkMode) Color(0xFF818CF8) else Color(0xFF3B82F6))
+                      .alpha(dotAlpha.value)
+              )
+          }
+      }
     }
 
-    // Bottom branding & version (increased bottom padding to 75.dp so it's not hidden under navigation bar)
+    // Bottom branding
     Column(
       modifier = Modifier
         .align(Alignment.BottomCenter)
-        .padding(bottom = 75.dp)
+        .padding(bottom = 60.dp)
         .alpha(alpha.value),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Text(
-        text = if (isEnglish) "Version 1.2.0" else "সংস্করণ ১.২.০",
-        fontSize = 12.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = if (isDarkMode) Color(0xFFC4B5FD) else Color(0xFF6D28D9)
+        text = if (isEnglish) "POWERED BY" else "পরিচালনায়",
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.sp,
+        color = if (isDarkMode) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.4f)
       )
       Spacer(modifier = Modifier.height(4.dp))
       Text(
-        text = "VibeStudio",
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Bold,
-        color = if (isDarkMode) Color(0xFFA78BFA) else Color(0xFF7C3AED)
+        text = "VIBESTUDIO",
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Black,
+        letterSpacing = 1.5.sp,
+        color = if (isDarkMode) Color(0xFF818CF8) else Color(0xFF2563EB)
       )
     }
   }

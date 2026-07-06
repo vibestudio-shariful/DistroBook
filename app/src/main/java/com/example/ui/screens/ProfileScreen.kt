@@ -56,6 +56,13 @@ fun ProfileScreen(
     val isDarkMode by viewModel.isDarkMode.collectAsState()
     val isEnglish by viewModel.isEnglish.collectAsState()
 
+    // Default values for comparison
+    val defaultName = t(viewModel, "আপনার নাম", "Your Name")
+    val defaultBusiness = t(viewModel, "আপনার প্রতিষ্ঠানের নাম", "Your Business Name")
+    val defaultPhone = t(viewModel, "০১৭xxxxxxxx", "017xxxxxxxx")
+    val defaultEmail = t(viewModel, "ইমেইল বা সোশ্যাল প্রোফাইল", "Email or Social Profile")
+    val defaultAddress = t(viewModel, "আপনার ঠিকানা", "Your Address")
+
     // Form states
     var nameInput by remember(currentUserName) { mutableStateOf(currentUserName) }
     var businessInput by remember(currentBusinessName) { mutableStateOf(currentBusinessName) }
@@ -627,17 +634,34 @@ fun ProfileScreen(
                                         avatarLauncher.launch("image/*")
                                     }
                             ) {
-                                val avatarModel = userAvatarPath ?: R.drawable.img_user_avatar
-                                AsyncImage(
-                                    model = avatarModel,
-                                    contentDescription = "User Profile Picture",
-                                    modifier = Modifier
-                                        .size(100.dp)
-                                        .clip(RoundedCornerShape(50.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(50.dp)),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                )
+                                if (userAvatarPath != null) {
+                                    AsyncImage(
+                                        model = userAvatarPath,
+                                        contentDescription = "User Profile Picture",
+                                        modifier = Modifier
+                                            .size(100.dp)
+                                            .clip(RoundedCornerShape(50.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                                            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(50.dp)),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(100.dp)
+                                            .clip(RoundedCornerShape(50.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                                            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(50.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Store,
+                                            contentDescription = "Shop Profile",
+                                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(50.dp)
+                                        )
+                                    }
+                                }
                                 
                                 Box(
                                     modifier = Modifier
@@ -677,7 +701,7 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         OutlinedTextField(
-                            value = nameInput,
+                            value = if (nameInput == defaultName) "" else nameInput,
                             onValueChange = { nameInput = it },
                             label = { Text(t(viewModel, "আপনার নাম *", "Your Name *")) },
                             leadingIcon = { Icon(Icons.Default.PersonOutline, contentDescription = null) },
@@ -687,11 +711,12 @@ fun ProfileScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
+                            ),
+                            placeholder = { if (nameInput == defaultName) Text(defaultName) }
                         )
 
                         OutlinedTextField(
-                            value = businessInput,
+                            value = if (businessInput == defaultBusiness) "" else businessInput,
                             onValueChange = { businessInput = it },
                             label = { Text(t(viewModel, "ব্যবসা বা ডিস্ট্রিবিউশন নাম *", "Business / Distribution Name *")) },
                             leadingIcon = { Icon(Icons.Default.Business, contentDescription = null) },
@@ -701,11 +726,12 @@ fun ProfileScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
+                            ),
+                            placeholder = { if (businessInput == defaultBusiness) Text(defaultBusiness) }
                         )
 
                         OutlinedTextField(
-                            value = phoneInput,
+                            value = if (phoneInput == defaultPhone) "" else phoneInput,
                             onValueChange = { phoneInput = it },
                             label = { Text(t(viewModel, "ফোন নম্বর", "Phone Number")) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -716,11 +742,12 @@ fun ProfileScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
+                            ),
+                            placeholder = { if (phoneInput == defaultPhone) Text(defaultPhone) }
                         )
 
                         OutlinedTextField(
-                            value = emailInput,
+                            value = if (emailInput == defaultEmail) "" else emailInput,
                             onValueChange = { emailInput = it },
                             label = { Text(t(viewModel, "ইমেইল বা সোশ্যাল প্রোফাইল", "Email or Social Profile")) },
                             leadingIcon = { Icon(Icons.Default.AlternateEmail, contentDescription = null) },
@@ -730,11 +757,12 @@ fun ProfileScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
+                            ),
+                            placeholder = { if (emailInput == defaultEmail) Text(defaultEmail) }
                         )
 
                         OutlinedTextField(
-                            value = addressInput,
+                            value = if (addressInput == defaultAddress) "" else addressInput,
                             onValueChange = { addressInput = it },
                             label = { Text(t(viewModel, "ঠিকানা", "Address")) },
                             leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null) },
@@ -744,20 +772,27 @@ fun ProfileScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
+                            ),
+                            placeholder = { if (addressInput == defaultAddress) Text(defaultAddress) }
                         )
 
                         Button(
                             onClick = {
-                                if (nameInput.trim().isEmpty() || businessInput.trim().isEmpty()) {
+                                val finalName = nameInput.trim().ifEmpty { defaultName }
+                                val finalBusiness = businessInput.trim().ifEmpty { defaultBusiness }
+                                val finalPhone = phoneInput.trim().ifEmpty { defaultPhone }
+                                val finalEmail = emailInput.trim().ifEmpty { defaultEmail }
+                                val finalAddress = addressInput.trim().ifEmpty { defaultAddress }
+                                
+                                if (finalName == defaultName || finalBusiness == defaultBusiness) {
                                     Toast.makeText(context, tNonCompose(isEnglish, "নাম এবং ব্যবসার নাম খালি রাখা যাবেনা!", "Name and Business Name cannot be empty!"), Toast.LENGTH_SHORT).show()
                                 } else {
                                     viewModel.saveUserProfile(
-                                        name = nameInput.trim(),
-                                        business = businessInput.trim(),
-                                        phone = phoneInput.trim(),
-                                        email = emailInput.trim(),
-                                        address = addressInput.trim()
+                                        name = finalName,
+                                        business = finalBusiness,
+                                        phone = finalPhone,
+                                        email = finalEmail,
+                                        address = finalAddress
                                     )
                                     Toast.makeText(context, tNonCompose(isEnglish, "প্রোফাইল সফলভাবে আপডেট করা হয়েছে!", "Profile updated successfully!"), Toast.LENGTH_SHORT).show()
                                 }

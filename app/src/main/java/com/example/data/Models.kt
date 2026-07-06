@@ -5,6 +5,7 @@ import androidx.room.PrimaryKey
 import com.squareup.moshi.JsonClass
 
 @Entity(tableName = "products")
+@JsonClass(generateAdapter = true)
 data class Product(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
@@ -15,6 +16,7 @@ data class Product(
 )
 
 @Entity(tableName = "shops")
+@JsonClass(generateAdapter = true)
 data class Shop(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
@@ -37,6 +39,7 @@ data class OrderItem(
 }
 
 @Entity(tableName = "orders")
+@JsonClass(generateAdapter = true)
 data class Order(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val shopId: Int,

@@ -12,6 +12,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import com.example.utils.LogManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -19,6 +20,16 @@ import java.util.Locale
 object GoogleDriveHelper {
     private const val TAG = "GoogleDriveHelper"
     private val client = OkHttpClient()
+
+    private fun log(message: String) {
+        Log.d(TAG, message)
+        LogManager.addLog(message)
+    }
+
+    private fun logError(message: String, e: Throwable) {
+        Log.e(TAG, message, e)
+        LogManager.addLog("$message: ${e.message}")
+    }
 
     // Retrieve OAuth2 Token
     suspend fun getAccessToken(context: Context, email: String): String? {
@@ -28,10 +39,10 @@ object GoogleDriveHelper {
                 val account = Account(email, "com.google")
                 GoogleAuthUtil.getToken(context, account, scopes)
             } catch (e: UserRecoverableAuthException) {
-                Log.e(TAG, "UserRecoverableAuthException", e)
+                logError("UserRecoverableAuthException", e)
                 throw e // Propagate to activity/viewModel to handle launcher intent
             } catch (e: Exception) {
-                Log.e(TAG, "Error getting access token", e)
+                logError("Error getting access token", e)
                 null
             }
         }
@@ -73,10 +84,10 @@ object GoogleDriveHelper {
 
                 client.newCall(request).execute().use { response ->
                     if (response.isSuccessful) {
-                        Log.d(TAG, "Backup uploaded successfully: ${response.body?.string()}")
+                        log("Backup uploaded successfully")
                         true
                     } else {
-                        Log.e(TAG, "Backup upload failed: Code ${response.code}, Message: ${response.message}")
+                        log("Backup upload failed: Code ${response.code}, Message: ${response.message}")
                         if (response.code == 401) {
                             throw java.io.IOException("401 Unauthorized")
                         }
@@ -84,7 +95,7 @@ object GoogleDriveHelper {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during backup upload", e)
+                logError("Exception during backup upload", e)
                 if (e is java.io.IOException && e.message == "401 Unauthorized") {
                     throw e
                 }
@@ -98,7 +109,7 @@ object GoogleDriveHelper {
         return withContext(Dispatchers.IO) {
             try {
                 val request = Request.Builder()
-                    .url("https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,name,createdTime,size)&orderBy=createdTime%20desc")
+                    .url("https://www.googleapis.com/drive/v3/files?spaces=drive,appDataFolder&fields=files(id,name,createdTime,size)&orderBy=createdTime%20desc")
                     .header("Authorization", "Bearer $accessToken")
                     .get()
                     .build()
@@ -118,18 +129,18 @@ object GoogleDriveHelper {
                                 val sizeStr = fileJson.optString("size", "0")
                                 val size = sizeStr.toLongOrNull() ?: 0L
                                 if (id.isNotEmpty()) {
-                                    Log.d(TAG, "File in appDataFolder: $name (ID: $id)")
+                                    log("File in drive/appData: $name (ID: $id)")
                                     if (name.startsWith("distrobook_backup_")) {
                                         backupList.add(DriveBackupFile(id, name, createdTime, size))
                                     }
                                 }
                             } catch (e: Exception) {
-                                Log.e(TAG, "Error parsing backup file resource at index $i", e)
+                                logError("Error parsing backup file resource", e)
                             }
                         }
                         backupList
                     } else {
-                        Log.e(TAG, "List backups failed: Code ${response.code}")
+                        log("List backups failed: Code ${response.code}")
                         if (response.code == 401) {
                             throw java.io.IOException("401 Unauthorized")
                         }
@@ -137,7 +148,7 @@ object GoogleDriveHelper {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during list backups", e)
+                logError("Exception during list backups", e)
                 if (e is java.io.IOException && e.message == "401 Unauthorized") {
                     throw e
                 }
@@ -160,7 +171,7 @@ object GoogleDriveHelper {
                     if (response.isSuccessful) {
                         response.body?.string()
                     } else {
-                        Log.e(TAG, "Download backup failed: Code ${response.code}")
+                        log("Download backup failed: Code ${response.code}")
                         if (response.code == 401) {
                             throw java.io.IOException("401 Unauthorized")
                         }
@@ -168,7 +179,7 @@ object GoogleDriveHelper {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during download backup", e)
+                logError("Exception during download backup", e)
                 if (e is java.io.IOException && e.message == "401 Unauthorized") {
                     throw e
                 }
@@ -194,7 +205,7 @@ object GoogleDriveHelper {
                     response.isSuccessful
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during delete backup", e)
+                logError("Exception during delete backup", e)
                 if (e is java.io.IOException && e.message == "401 Unauthorized") {
                     throw e
                 }

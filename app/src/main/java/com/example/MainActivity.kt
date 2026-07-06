@@ -87,20 +87,6 @@ fun MainAppScreen() {
   val isEnglish by viewModel.isEnglish.collectAsState()
   val isDarkMode by viewModel.isDarkMode.collectAsState()
 
-  // Set Navigation Bar Color
-  val view = LocalView.current
-  val navBarColor = MaterialTheme.colorScheme.primaryContainer.toArgb()
-  
-  SideEffect {
-    val window = (view.context as Activity).window
-    window.navigationBarColor = navBarColor
-    // Set status bar color to be consistent with TopAppBar
-    window.statusBarColor = navBarColor
-    
-    // Ensure status bar icons are light (white) if the background is dark
-    WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
-  }
-
   Scaffold(
     modifier = Modifier.fillMaxSize(),
     topBar = {
@@ -116,8 +102,9 @@ fun MainAppScreen() {
               "profile" -> if (isEnglish) "Profile & Settings" else "প্রোফাইল ও সেটিংস"
               else -> if (isEnglish) "Shop Supply" else "দোকান সাপ্লাই"
             },
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 22.sp,
+            color = MaterialTheme.colorScheme.onPrimary
           )
         },
         navigationIcon = {
@@ -126,7 +113,7 @@ fun MainAppScreen() {
               Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = if (isEnglish) "Back" else "ফিরে যান",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                tint = MaterialTheme.colorScheme.onPrimary
               )
             }
           }
@@ -140,7 +127,7 @@ fun MainAppScreen() {
             Icon(
               imageVector = Icons.Default.Translate,
               contentDescription = if (isEnglish) "Switch to Bangla" else "ইংরেজিতে পরিবর্তন করুন",
-              tint = MaterialTheme.colorScheme.onPrimaryContainer
+              tint = MaterialTheme.colorScheme.onPrimary
             )
           }
           // Theme toggle button
@@ -151,7 +138,7 @@ fun MainAppScreen() {
             Icon(
               imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
               contentDescription = if (isEnglish) "Toggle Theme" else "থিম পরিবর্তন করুন",
-              tint = MaterialTheme.colorScheme.onPrimaryContainer
+              tint = MaterialTheme.colorScheme.onPrimary
             )
           }
           // Settings button (only if not on profile screen)
@@ -163,14 +150,16 @@ fun MainAppScreen() {
               Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = if (isEnglish) "Settings" else "সেটিংস",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                tint = MaterialTheme.colorScheme.onPrimary
               )
             }
           }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-          containerColor = MaterialTheme.colorScheme.primaryContainer,
-          titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+          containerColor = MaterialTheme.colorScheme.primary,
+          titleContentColor = MaterialTheme.colorScheme.onPrimary,
+          actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
+          navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
         )
       )
     },
@@ -211,11 +200,11 @@ fun MainAppScreen() {
             },
             label = { Text(item.label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
             colors = NavigationBarItemDefaults.colors(
-              selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+              selectedIconColor = MaterialTheme.colorScheme.primary,
               selectedTextColor = MaterialTheme.colorScheme.primary,
-              indicatorColor = MaterialTheme.colorScheme.primary,
-              unselectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-              unselectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+              indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+              unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+              unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             ),
             modifier = Modifier.testTag("nav_item_${item.route}")
           )

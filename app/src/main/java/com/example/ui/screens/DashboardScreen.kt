@@ -99,10 +99,10 @@ fun DashboardScreen(
                     .padding(vertical = 4.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                border = null
             ) {
                 Row(
                     modifier = Modifier
@@ -121,7 +121,7 @@ fun DashboardScreen(
                         modifier = Modifier
                             .size(54.dp)
                             .clip(RoundedCornerShape(27.dp))
-                            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(27.dp)),
+                            .border(2.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f), RoundedCornerShape(27.dp)),
                         contentScale = ContentScale.Crop
                     )
 
@@ -132,14 +132,14 @@ fun DashboardScreen(
                         Text(
                             text = t(viewModel, "সরবরাহকারী ড্যাশবোর্ড", "Supplier Dashboard"),
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = userNameVal,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -151,12 +151,12 @@ fun DashboardScreen(
                                 imageVector = Icons.Outlined.Store,
                                 contentDescription = null,
                                 modifier = Modifier.size(13.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                             )
                             Text(
                                 text = businessNameVal,
                                 fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                                 fontWeight = FontWeight.Medium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -169,13 +169,13 @@ fun DashboardScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(RoundedCornerShape(18.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Settings,
                             contentDescription = "Edit Profile",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(18.dp)
                         )
                     }

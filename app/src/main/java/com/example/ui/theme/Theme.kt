@@ -17,35 +17,37 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = DarkPrimary,
-    onPrimary = DarkOnPrimary,
+    primary = TechPrimary,
+    onPrimary = Color.White,
     primaryContainer = DarkPrimaryContainer,
     onPrimaryContainer = DarkOnPrimaryContainer,
-    secondary = DarkPrimary,
-    onSecondary = DarkOnPrimary,
+    secondary = TechSecondary,
+    onSecondary = Color.White,
+    tertiary = TechAccent,
     background = DarkBackground,
     onBackground = DarkOnSurface,
     surface = DarkSurface,
     onSurface = DarkOnSurface,
-    surfaceVariant = Color(0xFF221C38),
-    onSurfaceVariant = DarkGrayText,
-    outline = DarkBorder
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    outline = DarkSurfaceVariant
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryPurple,
-    onPrimary = OnPrimaryWhite,
-    primaryContainer = Color(0xFF6D28D9), // Darker purple container
-    onPrimaryContainer = Color(0xFFEDE9FE), // Lighter text on darker container
-    secondary = Color(0xFF6D28D9), // Darker secondary
-    onSecondary = Color(0xFFEDE9FE),
-    background = LightBg,
-    onBackground = Color(0xFF1C142E),
-    surface = Color(0xFFDDD6FE), // Significantly darker/richer surface
-    onSurface = Color(0xFF1E1B4B), // Very dark purple text for contrast
-    surfaceVariant = Color(0xFFC4B5FD), // Darker variant
-    onSurfaceVariant = Color(0xFF2E1065), // Richer secondary text
-    outline = Color(0xFF7E22CE) // Darker border
+    primary = TechPrimary,
+    onPrimary = Color.White,
+    primaryContainer = LightPrimaryContainer,
+    onPrimaryContainer = LightOnPrimaryContainer,
+    secondary = TechSecondary,
+    onSecondary = Color.White,
+    tertiary = TechAccent,
+    background = LightBackground,
+    onBackground = LightOnSurface,
+    surface = LightSurface,
+    onSurface = LightOnSurface,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = LightOnSurfaceVariant,
+    outline = LightSurfaceVariant
 )
 
 @Composable
@@ -77,14 +79,9 @@ fun MyApplicationTheme(
         if (activity != null) {
             androidx.compose.runtime.SideEffect {
                 activity.enableEdgeToEdge(
-                    statusBarStyle = if (darkTheme) {
-                        androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-                    } else {
-                        androidx.activity.SystemBarStyle.light(
-                            android.graphics.Color.TRANSPARENT,
-                            android.graphics.Color.TRANSPARENT
-                        )
-                    },
+                    statusBarStyle = androidx.activity.SystemBarStyle.dark(
+                        android.graphics.Color.TRANSPARENT
+                    ),
                     navigationBarStyle = if (darkTheme) {
                         androidx.activity.SystemBarStyle.dark(colorScheme.surface.toArgb())
                     } else {

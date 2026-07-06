@@ -35,6 +35,7 @@ import com.example.R
 import com.example.ui.t
 import com.example.ui.tNonCompose
 import com.example.ui.viewmodel.AppViewModel
+import com.example.utils.LogManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -141,6 +142,7 @@ fun ProfileScreen(
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var showBackupConfirm by remember { mutableStateOf(false) }
     var showRestoreConfirm by remember { mutableStateOf(false) }
+    var showLogDialog by remember { mutableStateOf(false) }
 
     val authRecoveryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -367,6 +369,37 @@ fun ProfileScreen(
         )
     }
 
+    // Log Feedback Dialog
+    if (showLogDialog) {
+        val logs = remember { LogManager.getLogs() }
+        AlertDialog(
+            onDismissRequest = { showLogDialog = false },
+            title = { Text("Application Logs") },
+            text = {
+                LazyColumn(modifier = Modifier.height(300.dp)) {
+                    items(logs) { log ->
+                        Text(text = log, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Divider()
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    // Send Feedback Intent
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, "App Feedback/Logs")
+                        putExtra(Intent.EXTRA_TEXT, logs.joinToString("\n"))
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Send Feedback"))
+                }) { Text("Send Feedback") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogDialog = false }) { Text("Close") }
+            }
+        )
+    }
+
     Scaffold(
         // TopAppBar is handled by MainActivity
     ) { innerPadding ->
@@ -383,7 +416,7 @@ fun ProfileScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -764,6 +797,21 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 lineHeight = 16.sp
                             )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Button(
+                                    onClick = { showLogDialog = true },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+                                ) {
+                                    Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(t(viewModel, "লগ দেখুন / ফিডব্যাক পাঠান", "View Logs / Send Feedback"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                            }
+
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)

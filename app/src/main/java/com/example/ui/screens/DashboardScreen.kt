@@ -575,13 +575,13 @@ fun DashboardScreen(
                         Icon(
                             imageVector = Icons.Outlined.ReceiptLong,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(48.dp)
                         )
                         Text(
                             text = t(viewModel, "কোনো বিল এখনো তৈরি করা হয়নি", "No bills have been created yet"),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF72777F)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

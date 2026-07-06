@@ -93,8 +93,29 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     com.example.utils.GoogleDriveHelper.getAccessToken(getApplication(), email)
                 }
                 if (token != null) {
-                    val backups = com.example.utils.GoogleDriveHelper.listBackups(token)
-                    googleDriveBackups.value = backups
+                    try {
+                        val backups = com.example.utils.GoogleDriveHelper.listBackups(token)
+                        googleDriveBackups.value = backups
+                    } catch (ioe: java.io.IOException) {
+                        if (ioe.message == "401 Unauthorized") {
+                            try {
+                                com.google.android.gms.auth.GoogleAuthUtil.clearToken(getApplication(), token)
+                            } catch (clearEx: Exception) {
+                                clearEx.printStackTrace()
+                            }
+                            val freshToken = if (onAuthRequired != null) {
+                                getDriveAccessToken(getApplication(), email, onAuthRequired)
+                            } else {
+                                com.example.utils.GoogleDriveHelper.getAccessToken(getApplication(), email)
+                            }
+                            if (freshToken != null) {
+                                val backups = com.example.utils.GoogleDriveHelper.listBackups(freshToken)
+                                googleDriveBackups.value = backups
+                            }
+                        } else {
+                            throw ioe
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -731,13 +752,38 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val adapter = moshi.adapter(BackupPayload::class.java)
                 val json = adapter.toJson(payload)
 
-                val success = com.example.utils.GoogleDriveHelper.uploadBackup(token, json)
-                if (success) {
-                    val backups = com.example.utils.GoogleDriveHelper.listBackups(token)
-                    googleDriveBackups.value = backups
-                    onComplete(true, null)
-                } else {
-                    onComplete(false, "Upload failed")
+                try {
+                    val success = com.example.utils.GoogleDriveHelper.uploadBackup(token, json)
+                    if (success) {
+                        val backups = com.example.utils.GoogleDriveHelper.listBackups(token)
+                        googleDriveBackups.value = backups
+                        onComplete(true, null)
+                    } else {
+                        onComplete(false, "Upload failed")
+                    }
+                } catch (ioe: java.io.IOException) {
+                    if (ioe.message == "401 Unauthorized") {
+                        try {
+                            com.google.android.gms.auth.GoogleAuthUtil.clearToken(context, token)
+                        } catch (clearEx: Exception) {
+                            clearEx.printStackTrace()
+                        }
+                        val freshToken = getDriveAccessToken(context, email, onAuthRequired)
+                        if (freshToken != null) {
+                            val success = com.example.utils.GoogleDriveHelper.uploadBackup(freshToken, json)
+                            if (success) {
+                                val backups = com.example.utils.GoogleDriveHelper.listBackups(freshToken)
+                                googleDriveBackups.value = backups
+                                onComplete(true, null)
+                            } else {
+                                onComplete(false, "Upload failed")
+                            }
+                        } else {
+                            onComplete(false, "Failed to get fresh token")
+                        }
+                    } else {
+                        throw ioe
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -763,7 +809,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     return@launch
                 }
 
-                val json = com.example.utils.GoogleDriveHelper.downloadBackup(token, fileId)
+                var json: String? = null
+                try {
+                    json = com.example.utils.GoogleDriveHelper.downloadBackup(token, fileId)
+                } catch (ioe: java.io.IOException) {
+                    if (ioe.message == "401 Unauthorized") {
+                        try {
+                            com.google.android.gms.auth.GoogleAuthUtil.clearToken(context, token)
+                        } catch (clearEx: Exception) {
+                            clearEx.printStackTrace()
+                        }
+                        val freshToken = getDriveAccessToken(context, email, onAuthRequired)
+                        if (freshToken != null) {
+                            json = com.example.utils.GoogleDriveHelper.downloadBackup(freshToken, fileId)
+                        }
+                    } else {
+                        throw ioe
+                    }
+                }
+
                 if (json == null) {
                     onComplete(false, "Download failed")
                     return@launch
@@ -823,12 +887,35 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val token = getDriveAccessToken(context, email, onAuthRequired)
                 if (token != null) {
-                    val success = com.example.utils.GoogleDriveHelper.deleteBackup(token, fileId)
-                    if (success) {
-                        val backups = com.example.utils.GoogleDriveHelper.listBackups(token)
-                        googleDriveBackups.value = backups
+                    try {
+                        val success = com.example.utils.GoogleDriveHelper.deleteBackup(token, fileId)
+                        if (success) {
+                            val backups = com.example.utils.GoogleDriveHelper.listBackups(token)
+                            googleDriveBackups.value = backups
+                        }
+                        onComplete(success)
+                    } catch (ioe: java.io.IOException) {
+                        if (ioe.message == "401 Unauthorized") {
+                            try {
+                                com.google.android.gms.auth.GoogleAuthUtil.clearToken(context, token)
+                            } catch (clearEx: Exception) {
+                                clearEx.printStackTrace()
+                            }
+                            val freshToken = getDriveAccessToken(context, email, onAuthRequired)
+                            if (freshToken != null) {
+                                val success = com.example.utils.GoogleDriveHelper.deleteBackup(freshToken, fileId)
+                                if (success) {
+                                    val backups = com.example.utils.GoogleDriveHelper.listBackups(freshToken)
+                                    googleDriveBackups.value = backups
+                                }
+                                onComplete(success)
+                            } else {
+                                onComplete(false)
+                            }
+                        } else {
+                            throw ioe
+                        }
                     }
-                    onComplete(success)
                 } else {
                     onComplete(false)
                 }

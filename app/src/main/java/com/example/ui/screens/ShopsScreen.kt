@@ -335,7 +335,7 @@ fun ShopsScreen(
                             }
                             if (shop.address.isNotBlank()) {
                                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                                     Text(text = if (isEnglish) "Address: ${shop.address}" else "ঠিকানা: ${shop.address}", fontSize = 14.sp)
                                 }
                             }
@@ -356,13 +356,24 @@ fun ShopsScreen(
                                 Text(text = "৳${String.format("%,.0f", shopTotalSales)}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
                         }
+                        val isDark = isSystemInDarkTheme()
+                        val cardBg = if (shopTotalDue > 0) {
+                            MaterialTheme.colorScheme.errorContainer
+                        } else {
+                            if (isDark) Color(0xFF1B5E20).copy(alpha = 0.2f) else Color(0xFFE8F5E9)
+                        }
+                        val textColor = if (shopTotalDue > 0) {
+                            MaterialTheme.colorScheme.onErrorContainer
+                        } else {
+                            if (isDark) Color(0xFFC8E6C9) else Color(0xFF2E7D32)
+                        }
                         Card(
                             modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(containerColor = if (shopTotalDue > 0) MaterialTheme.colorScheme.errorContainer else Color(0xFFE8F5E9))
+                            colors = CardDefaults.cardColors(containerColor = cardBg)
                         ) {
                             Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(text = if (isEnglish) "Total Dues" else "মোট বকেয়া", fontSize = 11.sp, color = if (shopTotalDue > 0) MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f) else Color(0xFF2E7D32))
-                                Text(text = "৳${String.format("%,.0f", shopTotalDue)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (shopTotalDue > 0) MaterialTheme.colorScheme.error else Color(0xFF2E7D32))
+                                Text(text = if (isEnglish) "Total Dues" else "মোট বকেয়া", fontSize = 11.sp, color = textColor.copy(alpha = 0.8f))
+                                Text(text = "৳${String.format("%,.0f", shopTotalDue)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = textColor)
                             }
                         }
                     }
@@ -371,7 +382,7 @@ fun ShopsScreen(
                     Text(text = if (isEnglish) "Order History (${shopOrders.size})" else "অর্ডার হিস্টোরি (${shopOrders.size} টি)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     
                     if (shopOrders.isEmpty()) {
-                        Text(text = if (isEnglish) "No items have been supplied to this shop yet." else "এই দোকানে এখনো কোনো মালামাল সরবরাহ করা হয়নি।", fontSize = 12.sp, color = MaterialTheme.colorScheme.outline)
+                        Text(text = if (isEnglish) "No items have been supplied to this shop yet." else "এই দোকানে এখনো কোনো মালামাল সরবরাহ করা হয়নি।", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -392,14 +403,14 @@ fun ShopsScreen(
                                     ) {
                                         Column {
                                             Text(text = dateStr, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                            Text(text = if (isEnglish) "${order.items.size} Items" else "${order.items.size} টি আইটেম", fontSize = 10.sp, color = MaterialTheme.colorScheme.outline)
+                                            Text(text = if (isEnglish) "${order.items.size} Items" else "${order.items.size} টি আইটেম", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         Column(horizontalAlignment = Alignment.End) {
                                             Text(text = "৳${String.format("%,.0f", order.totalAmount)}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                             if (order.dueAmount > 0) {
                                                 Text(text = if (isEnglish) "Due: ৳${String.format("%,.0f", order.dueAmount)}" else "বকেয়া: ৳${String.format("%,.0f", order.dueAmount)}", fontSize = 10.sp, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                                             } else {
-                                                Text(text = if (isEnglish) "Paid" else "পরিশোধিত", fontSize = 10.sp, color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
+                                                Text(text = if (isEnglish) "Paid" else "পরিশোধিত", fontSize = 10.sp, color = if (isSystemInDarkTheme()) Color(0xFFC8E6C9) else Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
                                             }
                                         }
                                     }
@@ -573,14 +584,14 @@ fun ShopItemRow(
                 Column {
                     if (shop.phone.isNotBlank()) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Outlined.Call, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
-                            Text(text = shop.phone, fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
+                            Icon(Icons.Outlined.Call, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(text = shop.phone, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     if (shop.address.isNotBlank()) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
-                            Text(text = shop.address, fontSize = 11.sp, color = MaterialTheme.colorScheme.outline, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(text = shop.address, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
@@ -708,7 +719,7 @@ fun AddEditShopDialog(
                             Icon(
                                 imageVector = Icons.Outlined.AddAPhoto,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.outline
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }

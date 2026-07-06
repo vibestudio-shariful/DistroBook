@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -215,7 +216,7 @@ fun CreateOrderScreen(
                                     Text(
                                         text = selectedShop!!.address,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,
                                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                     )
@@ -230,7 +231,7 @@ fun CreateOrderScreen(
                                 Text(
                                     text = if (isEnglish) "Tap to select or add a new shop" else "দোকান সিলেক্ট বা নতুন যোগ করতে ট্যাপ করুন",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -318,7 +319,7 @@ fun CreateOrderScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Outlined.Inventory, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(48.dp))
+                            Icon(Icons.Outlined.Inventory, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
                             Text(if (isEnglish) "Please add some products first!" else "প্রথমে কিছু প্রোডাক্ট এন্ট্রি করে নিন!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
@@ -391,7 +392,7 @@ fun CreateOrderScreen(
                                     Text(
                                         text = if (isEnglish) "Stock: ${product.stock} ${product.unit}" else "স্টক: ${product.stock} ${product.unit}",
                                         fontSize = 11.sp,
-                                        color = if (product.stock == 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                                        color = if (product.stock == 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = if (product.stock == 0) FontWeight.Bold else FontWeight.Normal
                                     )
                                 }
@@ -612,12 +613,12 @@ fun CreateOrderScreen(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.End
                     ) {
-                        Text(if (isEnglish) "Remaining Due" else "অবশিষ্ট বকেয়া", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
+                        Text(if (isEnglish) "Remaining Due" else "অবশিষ্ট বকেয়া", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             text = "৳${String.format("%,.2f", dueAmount)}",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (dueAmount > 0) MaterialTheme.colorScheme.error else Color(0xFF2E7D32)
+                            color = if (dueAmount > 0) MaterialTheme.colorScheme.error else (if (isSystemInDarkTheme()) Color(0xFFC8E6C9) else Color(0xFF2E7D32))
                         )
                     }
                 }
@@ -791,7 +792,7 @@ fun CreateOrderScreen(
                         Text(
                             text = "৳${String.format("%,.2f", dueAmount)}",
                             fontWeight = FontWeight.Bold,
-                            color = if (dueAmount > 0) MaterialTheme.colorScheme.error else Color(0xFF2E7D32)
+                            color = if (dueAmount > 0) MaterialTheme.colorScheme.error else (if (isSystemInDarkTheme()) Color(0xFFC8E6C9) else Color(0xFF2E7D32))
                         )
                     }
                 }
@@ -907,7 +908,7 @@ fun CreateOrderScreen(
                             Text(
                                 text = if (isEnglish) "No shops found!" else "কোনো দোকান পাওয়া যায়নি!",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     } else {

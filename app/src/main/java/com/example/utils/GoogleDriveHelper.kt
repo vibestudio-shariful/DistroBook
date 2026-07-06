@@ -77,11 +77,17 @@ object GoogleDriveHelper {
                         true
                     } else {
                         Log.e(TAG, "Backup upload failed: Code ${response.code}, Message: ${response.message}")
+                        if (response.code == 401) {
+                            throw java.io.IOException("401 Unauthorized")
+                        }
                         false
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Exception during backup upload", e)
+                if (e is java.io.IOException && e.message == "401 Unauthorized") {
+                    throw e
+                }
                 false
             }
         }
@@ -121,11 +127,17 @@ object GoogleDriveHelper {
                         backupList
                     } else {
                         Log.e(TAG, "List backups failed: Code ${response.code}")
+                        if (response.code == 401) {
+                            throw java.io.IOException("401 Unauthorized")
+                        }
                         emptyList()
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Exception during list backups", e)
+                if (e is java.io.IOException && e.message == "401 Unauthorized") {
+                    throw e
+                }
                 emptyList()
             }
         }
@@ -146,11 +158,17 @@ object GoogleDriveHelper {
                         response.body?.string()
                     } else {
                         Log.e(TAG, "Download backup failed: Code ${response.code}")
+                        if (response.code == 401) {
+                            throw java.io.IOException("401 Unauthorized")
+                        }
                         null
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Exception during download backup", e)
+                if (e is java.io.IOException && e.message == "401 Unauthorized") {
+                    throw e
+                }
                 null
             }
         }
@@ -167,10 +185,16 @@ object GoogleDriveHelper {
                     .build()
 
                 client.newCall(request).execute().use { response ->
+                    if (response.code == 401) {
+                        throw java.io.IOException("401 Unauthorized")
+                    }
                     response.isSuccessful
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Exception during delete backup", e)
+                if (e is java.io.IOException && e.message == "401 Unauthorized") {
+                    throw e
+                }
                 false
             }
         }

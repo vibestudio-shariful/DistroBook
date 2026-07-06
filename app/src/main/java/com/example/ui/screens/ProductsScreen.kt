@@ -143,64 +143,84 @@ fun ProductsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            var isInitialAdVisible by remember { mutableStateOf(false) }
+            AdBanner(onVisibilityChanged = { isInitialAdVisible = it })
+            if (isInitialAdVisible) {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             // Products List
-            if (filteredProducts.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Inventory,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Text(
-                            text = if (searchQuery.isNotEmpty()) {
-                                t(viewModel, "কোনো প্রোডাক্ট পাওয়া যায়নি!", "No products found!")
-                            } else {
-                                t(viewModel, "কোনো প্রোডাক্ট এন্ট্রি করা হয়নি!", "No products entered yet!")
-                            },
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = t(viewModel, "নতুন প্রোডাক্ট যোগ করতে নিচের '+' বাটনে চাপুন।", "Press the '+' button below to add a new product."),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    items(filteredProducts, key = { it.id }) { product ->
-                        ProductItemRow(
-                            product = product,
-                            isEnglish = isEnglish,
-                            onEditClick = {
-                                selectedProductForEdit = product
-                                showAddEditDialog = true
-                            },
-                            onDeleteClick = {
-                                showDeleteConfirmation = product
-                            },
-                            onQuickStockUpdate = { quantityDiff ->
-                                val newStock = (product.stock + quantityDiff).coerceAtLeast(0)
-                                viewModel.updateProduct(product.copy(stock = newStock))
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                if (filteredProducts.isEmpty()) {
+                    item(key = "empty_state") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Inventory,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(64.dp)
+                                )
+                                Text(
+                                    text = if (searchQuery.isNotEmpty()) {
+                                        t(viewModel, "কোনো প্রোডাক্ট পাওয়া যায়নি!", "No products found!")
+                                    } else {
+                                        t(viewModel, "কোনো প্রোডাক্ট এন্ট্রি করা হয়নি!", "No products entered yet!")
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = t(viewModel, "নতুন প্রোডাক্ট যোগ করতে নিচের '+' বাটনে চাপুন।", "Press the '+' button below to add a new product."),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
-                        )
+                        }
+                    }
+                } else {
+                    filteredProducts.forEachIndexed { index, product ->
+                        item(key = "product_${product.id}") {
+                            Column {
+                                ProductItemRow(
+                                    product = product,
+                                    isEnglish = isEnglish,
+                                    onEditClick = {
+                                        selectedProductForEdit = product
+                                        showAddEditDialog = true
+                                    },
+                                    onDeleteClick = {
+                                        showDeleteConfirmation = product
+                                    },
+                                    onQuickStockUpdate = { quantityDiff ->
+                                        val newStock = (product.stock + quantityDiff).coerceAtLeast(0)
+                                        viewModel.updateProduct(product.copy(stock = newStock))
+                                    }
+                                )
+                                
+                                if ((index + 1) % 10 == 0 && index < filteredProducts.size - 1) {
+                                    var isInlineAdVisible by remember { mutableStateOf(false) }
+                                    if (isInlineAdVisible) {
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                    }
+                                    AdBanner(onVisibilityChanged = { isInlineAdVisible = it })
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -229,14 +249,15 @@ fun ProductsScreen(
             product = selectedProductForEdit,
             isEnglish = isEnglish,
             onDismiss = { showAddEditDialog = false },
-            onConfirm = { name, price, stock, description, unit ->
+            onConfirm = { name, price, purchasePrice, stock, description, unit ->
                 if (selectedProductForEdit == null) {
-                    viewModel.addProduct(name, price, stock, description, unit)
+                    viewModel.addProduct(name, price, stock, description, unit, purchasePrice)
                 } else {
                     viewModel.updateProduct(
                         selectedProductForEdit!!.copy(
                             name = name,
                             price = price,
+                            purchasePrice = purchasePrice,
                             stock = stock,
                             description = description,
                             unit = unit
@@ -431,10 +452,11 @@ fun AddEditProductDialog(
     product: Product?,
     isEnglish: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, Double, Int, String, String) -> Unit
+    onConfirm: (String, Double, Double, Int, String, String) -> Unit
 ) {
     var name by remember { mutableStateOf(product?.name ?: "") }
     var priceStr by remember { mutableStateOf(product?.price?.let { if (it == 0.0) "" else it.toString() } ?: "") }
+    var purchasePriceStr by remember { mutableStateOf(product?.purchasePrice?.let { if (it == 0.0) "" else it.toString() } ?: "") }
     var stockStr by remember { mutableStateOf(product?.stock?.let { if (it == 0) "" else it.toString() } ?: "") }
     var description by remember { mutableStateOf(product?.description ?: "") }
     
@@ -447,18 +469,35 @@ fun AddEditProductDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
-            Text(
-                if (product == null) {
-                    if (isEnglish) "Add New Product" else "নতুন প্রোডাক্ট যোগ করুন"
-                } else {
-                    if (isEnglish) "Edit Product Details" else "প্রোডাক্টের তথ্য এডিট করুন"
-                }
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(bottom = 6.dp)
+            ) {
+                Icon(
+                    imageVector = if (product == null) Icons.Default.ShoppingCart else Icons.Default.Edit,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(26.dp)
+                )
+                Text(
+                    text = if (product == null) {
+                        if (isEnglish) "Add New Product" else "নতুন প্রোডাক্ট যোগ করুন"
+                    } else {
+                        if (isEnglish) "Edit Product Details" else "প্রোডাক্টের তথ্য এডিট করুন"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         },
         text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
@@ -466,7 +505,13 @@ fun AddEditProductDialog(
                     onValueChange = { name = it },
                     label = { Text(if (isEnglish) "Product Name *" else "প্রোডাক্টের নাম *") },
                     modifier = Modifier.fillMaxWidth().testTag("product_name_input"),
-                    singleLine = true
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
                 )
 
                 OutlinedTextField(
@@ -475,23 +520,50 @@ fun AddEditProductDialog(
                     label = { Text(if (isEnglish) "Selling Price (TK) *" else "বিক্রয় মূল্য (টাকা) *") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth().testTag("product_price_input"),
-                    singleLine = true
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
                 )
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = purchasePriceStr,
+                    onValueChange = { purchasePriceStr = it },
+                    label = { Text(if (isEnglish) "Purchase Price (TK) (Optional)" else "ক্রয় মূল্য (টাকা) (ঐচ্ছিক)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth().testTag("product_purchase_price_input"),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = stockStr,
                         onValueChange = { stockStr = it },
                         label = { Text(if (isEnglish) "Stock *" else "স্টক *") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f).testTag("product_stock_input"),
-                        singleLine = true
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        )
                     )
                     
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = !expanded },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1.5f)
                     ) {
                         OutlinedTextField(
                             value = selectedUnit,
@@ -504,7 +576,12 @@ fun AddEditProductDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor(),
-                            colors = OutlinedTextFieldDefaults.colors()
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
                         )
                         ExposedDropdownMenu(
                             expanded = expanded,
@@ -529,14 +606,21 @@ fun AddEditProductDialog(
                     onValueChange = { description = it },
                     label = { Text(if (isEnglish) "Product Description (Optional)" else "প্রোডাক্টের বিবরণ (ঐচ্ছিক)") },
                     modifier = Modifier.fillMaxWidth(),
-                    maxLines = 3
+                    shape = RoundedCornerShape(12.dp),
+                    maxLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
                 )
 
                 if (isError) {
                     Text(
                         text = if (isEnglish) "Please fill in all marked (*) fields correctly." else "অনুগ্রহ করে সব তারকা (*) চিহ্নিত ঘরগুলো সঠিকভাবে পূরণ করুন।",
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -545,21 +629,26 @@ fun AddEditProductDialog(
             Button(
                 onClick = {
                     val parsedPrice = priceStr.toDoubleOrNull() ?: 0.0
+                    val parsedPurchasePrice = purchasePriceStr.toDoubleOrNull() ?: 0.0
                     val parsedStock = stockStr.toIntOrNull() ?: 0
                     if (name.isBlank() || parsedPrice <= 0 || parsedStock < 0) {
                         isError = true
                     } else {
-                        onConfirm(name, parsedPrice, parsedStock, description, selectedUnit)
+                        onConfirm(name, parsedPrice, parsedPurchasePrice, parsedStock, description, selectedUnit)
                     }
                 },
-                modifier = Modifier.testTag("product_dialog_confirm")
+                modifier = Modifier.testTag("product_dialog_confirm"),
+                shape = RoundedCornerShape(10.dp)
             ) {
-                Text(if (isEnglish) "Save" else "সংরক্ষণ করুন")
+                Text(if (isEnglish) "Save" else "সংরক্ষণ করুন", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(if (isEnglish) "Cancel" else "বাতিল")
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(if (isEnglish) "Cancel" else "বাতিল", fontWeight = FontWeight.SemiBold)
             }
         }
     )

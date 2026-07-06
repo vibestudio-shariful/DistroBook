@@ -34,7 +34,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryModern,
+    primary = DarkPrimary,
     onPrimary = Color.White,
     primaryContainer = LightPrimaryContainer,
     onPrimaryContainer = LightOnPrimaryContainer,
@@ -78,15 +78,14 @@ fun MyApplicationTheme(
         val activity = currentContext as? androidx.activity.ComponentActivity
         if (activity != null) {
             androidx.compose.runtime.SideEffect {
-                val middleColor = colorScheme.primary
+                val systemBarColor = DarkPrimary
                 val window = activity.window
-                window.statusBarColor = middleColor.toArgb()
-                window.navigationBarColor = middleColor.toArgb()
+                window.statusBarColor = systemBarColor.toArgb()
+                window.navigationBarColor = systemBarColor.toArgb()
                 
                 val windowInsetsController = WindowCompat.getInsetsController(window, view)
-                val isLightColor = (middleColor.red * 0.299f + middleColor.green * 0.587f + middleColor.blue * 0.114f) > 0.5f
-                windowInsetsController.isAppearanceLightStatusBars = isLightColor
-                windowInsetsController.isAppearanceLightNavigationBars = isLightColor
+                windowInsetsController.isAppearanceLightStatusBars = false
+                windowInsetsController.isAppearanceLightNavigationBars = false
             }
         }
     }

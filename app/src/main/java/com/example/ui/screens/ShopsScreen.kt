@@ -117,67 +117,87 @@ fun ShopsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Shops List
-            if (filteredShops.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Storefront,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Text(
-                            text = if (searchQuery.isNotEmpty()) {
-                                t(viewModel, "কোনো দোকান পাওয়া যায়নি!", "No shops found!")
-                            } else {
-                                t(viewModel, "কোনো দোকান এন্ট্রি করা হয়নি!", "No shops entered yet!")
-                            },
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = t(viewModel, "নতুন দোকান যোগ করতে নিচের '+' বাটনে চাপুন।", "Press the '+' button below to add a new shop."),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    items(filteredShops, key = { it.id }) { shop ->
-                        // Calculate total outstanding due for this specific shop
-                        val shopOrders = orders.filter { it.shopId == shop.id }
-                        val shopTotalDue = shopOrders.sumOf { it.dueAmount }
+            var isInitialAdVisible by remember { mutableStateOf(false) }
+            AdBanner(onVisibilityChanged = { isInitialAdVisible = it })
+            if (isInitialAdVisible) {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-                        ShopItemRow(
-                            shop = shop,
-                            dueAmount = shopTotalDue,
-                            isEnglish = isEnglish,
-                            isDarkMode = isDarkMode,
-                            onClick = { selectedShopDetails = shop },
-                            onEditClick = {
-                                selectedShopForEdit = shop
-                                showAddEditDialog = true
-                            },
-                            onDeleteClick = {
-                                showDeleteConfirmation = shop
+            // Shops List
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                if (filteredShops.isEmpty()) {
+                    item(key = "empty_state") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Storefront,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(64.dp)
+                                )
+                                Text(
+                                    text = if (searchQuery.isNotEmpty()) {
+                                        t(viewModel, "কোনো দোকান পাওয়া যায়নি!", "No shops found!")
+                                    } else {
+                                        t(viewModel, "কোনো দোকান এন্ট্রি করা হয়নি!", "No shops entered yet!")
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = t(viewModel, "নতুন দোকান যোগ করতে নিচের '+' বাটনে চাপুন।", "Press the '+' button below to add a new shop."),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
-                        )
+                        }
+                    }
+                } else {
+                    filteredShops.forEachIndexed { index, shop ->
+                        item(key = "shop_${shop.id}") {
+                            Column {
+                                // Calculate total outstanding due for this specific shop
+                                val shopOrders = orders.filter { it.shopId == shop.id }
+                                val shopTotalDue = shopOrders.sumOf { it.dueAmount }
+
+                                ShopItemRow(
+                                    shop = shop,
+                                    dueAmount = shopTotalDue,
+                                    isEnglish = isEnglish,
+                                    isDarkMode = isDarkMode,
+                                    onClick = { selectedShopDetails = shop },
+                                    onEditClick = {
+                                        selectedShopForEdit = shop
+                                        showAddEditDialog = true
+                                    },
+                                    onDeleteClick = {
+                                        showDeleteConfirmation = shop
+                                    }
+                                )
+                                
+                                if ((index + 1) % 10 == 0 && index < filteredShops.size - 1) {
+                                    var isInlineAdVisible by remember { mutableStateOf(false) }
+                                    if (isInlineAdVisible) {
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                    }
+                                    AdBanner(onVisibilityChanged = { isInlineAdVisible = it })
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -479,25 +499,64 @@ fun ShopsScreen(
     showPaymentDialogForShop?.let { shop ->
         AlertDialog(
             onDismissRequest = { showPaymentDialogForShop = null },
-            title = { Text(t(viewModel, "বকেয়া আদায়", "Collect Due")) },
-            text = {
-                Column {
-                    Text(
-                        t(viewModel, "কত টাকা আদায় হয়েছে?", "Enter amount collected:")
+            shape = RoundedCornerShape(24.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Payments,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(26.dp)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = t(viewModel, "বকেয়া আদায়", "Collect Due"),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = t(
+                            viewModel,
+                            "দোকান: ${shop.name}\nকত টাকা বকেয়া আদায় করা হয়েছে?",
+                            "Shop: ${shop.name}\nEnter amount collected:"
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
                     OutlinedTextField(
                         value = paymentAmountInput,
                         onValueChange = { paymentAmountInput = it },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        label = { Text(t(viewModel, "টাকার পরিমাণ", "Amount")) },
+                        label = { Text(t(viewModel, "আদায়ের পরিমাণ", "Amount Collected")) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("payment_amount_input"),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), // High visibility in both modes!
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent
+                        )
                     )
                 }
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
                         val amount = paymentAmountInput.toDoubleOrNull()
                         if (amount != null && amount > 0) {
@@ -505,14 +564,19 @@ fun ShopsScreen(
                         }
                         showPaymentDialogForShop = null
                         selectedShopDetails = null
-                    }
+                    },
+                    modifier = Modifier.testTag("payment_dialog_confirm"),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text(t(viewModel, "নিশ্চিত করুন (Confirm)", "Confirm"))
+                    Text(t(viewModel, "নিশ্চিত করুন (Confirm)", "Confirm"), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showPaymentDialogForShop = null }) {
-                    Text(t(viewModel, "বাতিল (Cancel)", "Cancel"))
+                TextButton(
+                    onClick = { showPaymentDialogForShop = null },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(t(viewModel, "বাতিল (Cancel)", "Cancel"), fontWeight = FontWeight.SemiBold)
                 }
             }
         )
@@ -761,18 +825,35 @@ fun AddEditShopDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
-            Text(
-                if (shop == null) {
-                    if (isEnglish) "Add New Shop" else "নতুন দোকান যোগ করুন"
-                } else {
-                    if (isEnglish) "Edit Shop Details" else "দোকানের তথ্য এডিট করুন"
-                }
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(bottom = 6.dp)
+            ) {
+                Icon(
+                    imageVector = if (shop == null) Icons.Default.Storefront else Icons.Default.Edit,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(26.dp)
+                )
+                Text(
+                    text = if (shop == null) {
+                        if (isEnglish) "Add New Shop" else "নতুন দোকান যোগ করুন"
+                    } else {
+                        if (isEnglish) "Edit Shop Details" else "দোকানের তথ্য এডিট করুন"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         },
         text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 // Image selection slot
@@ -784,9 +865,9 @@ fun AddEditShopDialog(
                     Box(
                         modifier = Modifier
                             .size(64.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                            .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         val currentImageUri = imageUri
@@ -828,9 +909,10 @@ fun AddEditShopDialog(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
+                            ),
+                            shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text(text = if (isEnglish) "Select Photo" else "ছবি যুক্ত করুন", fontSize = 12.sp)
+                            Text(text = if (isEnglish) "Select Photo" else "ছবি যুক্ত করুন", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                         if (!imageUri.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(4.dp))
@@ -853,7 +935,13 @@ fun AddEditShopDialog(
                     label = { Text(if (isEnglish) "Shop Name *" else "দোকানের নাম *") },
                     placeholder = { Text(if (isEnglish) "e.g. Sota General Store" else "যেমন- সততা জেনারেল স্টোর") },
                     modifier = Modifier.fillMaxWidth().testTag("shop_name_input"),
-                    singleLine = true
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
                 )
 
                 OutlinedTextField(
@@ -862,7 +950,13 @@ fun AddEditShopDialog(
                     label = { Text(if (isEnglish) "Owner Name (Optional)" else "মালিকের নাম (ঐচ্ছিক)") },
                     placeholder = { Text(if (isEnglish) "e.g. Rafiq" else "যেমন- মো: রফিক") },
                     modifier = Modifier.fillMaxWidth().testTag("shop_owner_input"),
-                    singleLine = true
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
                 )
 
                 OutlinedTextField(
@@ -872,7 +966,13 @@ fun AddEditShopDialog(
                     placeholder = { Text(if (isEnglish) "e.g. 017xxxxxxxx" else "যেমন- 017xxxxxxxx") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     modifier = Modifier.fillMaxWidth().testTag("shop_phone_input"),
-                    singleLine = true
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
                 )
 
                 OutlinedTextField(
@@ -881,14 +981,21 @@ fun AddEditShopDialog(
                     label = { Text(if (isEnglish) "Shop Address (Optional)" else "দোকানের ঠিকানা (ঐচ্ছিক)") },
                     placeholder = { Text(if (isEnglish) "e.g. Mirpur 10, Dhaka" else "যেমন- মিরপুর ১০, ঢাকা") },
                     modifier = Modifier.fillMaxWidth().testTag("shop_address_input"),
-                    maxLines = 2
+                    shape = RoundedCornerShape(12.dp),
+                    maxLines = 2,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
                 )
 
                 if (isError) {
                     Text(
                         text = if (isEnglish) "Please enter a valid shop name." else "অনুগ্রহ করে দোকানের নাম সঠিকভাবে লিখুন।",
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -902,14 +1009,18 @@ fun AddEditShopDialog(
                         onConfirm(name, ownerName, phone, address, imageUri)
                     }
                 },
-                modifier = Modifier.testTag("shop_dialog_confirm")
+                modifier = Modifier.testTag("shop_dialog_confirm"),
+                shape = RoundedCornerShape(10.dp)
             ) {
-                Text(if (isEnglish) "Save" else "সংরক্ষণ করুন")
+                Text(if (isEnglish) "Save" else "সংরক্ষণ করুন", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(if (isEnglish) "Cancel" else "বাতিল")
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(if (isEnglish) "Cancel" else "বাতিল", fontWeight = FontWeight.SemiBold)
             }
         }
     )

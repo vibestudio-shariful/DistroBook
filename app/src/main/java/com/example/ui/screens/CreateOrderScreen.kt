@@ -65,8 +65,8 @@ fun CreateOrderScreen(
             product = null,
             isEnglish = isEnglish,
             onDismiss = { showAddProductDialog = false },
-            onConfirm = { name, price, stock, description, unit ->
-                viewModel.addProduct(name, price, stock, description, unit)
+            onConfirm = { name, price, purchasePrice, stock, description, unit ->
+                viewModel.addProduct(name, price, stock, description, unit, purchasePrice)
                 showAddProductDialog = false
             }
         )
@@ -158,7 +158,7 @@ fun CreateOrderScreen(
                             modifier = Modifier
                                 .size(56.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
                         ) {
                             val imageUri = selectedShop?.imageUri
@@ -189,7 +189,7 @@ fun CreateOrderScreen(
                                 Icon(
                                     imageVector = Icons.Outlined.Storefront,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
@@ -238,12 +238,16 @@ fun CreateOrderScreen(
                         
                         IconButton(
                             onClick = { showShopSelectionDialog = true },
-                            modifier = Modifier.testTag("shop_change_button")
+                            modifier = Modifier
+                                .testTag("shop_change_button")
+                                .size(40.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
                         ) {
                             Icon(
                                 imageVector = if (selectedShop != null) Icons.Default.Edit else Icons.Default.Add,
                                 contentDescription = "Edit Shop Selection",
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -267,9 +271,9 @@ fun CreateOrderScreen(
                         onClick = { showAddProductDialog = true },
                         modifier = Modifier
                             .size(40.dp)
-                            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add New Product", tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Add, contentDescription = "Add New Product", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     }
                 }
             }

@@ -60,6 +60,11 @@ import com.example.ui.viewmodel.AppViewModel
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    try {
+      com.google.android.gms.ads.MobileAds.initialize(this)
+    } catch (e: Exception) {
+      e.printStackTrace()
+    }
     enableEdgeToEdge()
     setContent {
       val viewModel: AppViewModel = viewModel()
@@ -473,7 +478,7 @@ fun SplashScreen(isDarkMode: Boolean, isEnglish: Boolean, onTimeout: () -> Unit)
             color = if (isDarkMode) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.05f)
         ) {}
         Image(
-          painter = painterResource(id = R.drawable.ic_launcher_circle_logo_1783267887935),
+          painter = painterResource(id = R.drawable.ic_launcher_logo),
           contentDescription = "Logo",
           modifier = Modifier
             .size(120.dp)

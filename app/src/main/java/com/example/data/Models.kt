@@ -12,7 +12,8 @@ data class Product(
     val price: Double,
     val stock: Int = 0,
     val description: String = "",
-    val unit: String = "Pcs"
+    val unit: String = "Pcs",
+    val purchasePrice: Double = 0.0
 )
 
 @Entity(tableName = "shops")

@@ -364,45 +364,65 @@ fun OrderHistoryScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            var isInitialAdVisible by remember { mutableStateOf(false) }
+            AdBanner(onVisibilityChanged = { isInitialAdVisible = it })
+            if (isInitialAdVisible) {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             // Orders List
-            if (filteredOrders.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.ReceiptLong,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Text(
-                            text = if (isEnglish) "No bills found!" else "কোনো বিল পাওয়া যায়নি!",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 16.dp)
+            ) {
+                if (filteredOrders.isEmpty()) {
+                    item(key = "empty_state") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.ReceiptLong,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(64.dp)
+                                )
+                                Text(
+                                    text = if (isEnglish) "No bills found!" else "কোনো বিল পাওয়া যায়নি!",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
-                    items(filteredOrders, key = { it.id }) { order ->
-                        val shop = shops.find { it.id == order.shopId }
-                        RecentOrderRow(
-                            order = order,
-                            shopImageUri = shop?.imageUri,
-                            onClick = { selectedOrderDetails = order }
-                        )
+                } else {
+                    filteredOrders.forEachIndexed { index, order ->
+                        item(key = "order_${order.id}") {
+                            Column {
+                                val shop = shops.find { it.id == order.shopId }
+                                RecentOrderRow(
+                                    order = order,
+                                    shopImageUri = shop?.imageUri,
+                                    onClick = { selectedOrderDetails = order }
+                                )
+                                
+                                if ((index + 1) % 10 == 0 && index < filteredOrders.size - 1) {
+                                    var isInlineAdVisible by remember { mutableStateOf(false) }
+                                    if (isInlineAdVisible) {
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                    }
+                                    AdBanner(onVisibilityChanged = { isInlineAdVisible = it })
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -633,7 +653,16 @@ fun OrderHistoryScreen(
                         placeholder = { Text(if (isEnglish) "e.g. 500.00" else "যেমন- ৫০০.০০") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth().testTag("due_collect_input"),
-                        singleLine = true
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent
+                        )
                     )
 
                     if (isError) {

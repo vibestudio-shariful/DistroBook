@@ -64,7 +64,7 @@ fun DashboardScreen(
     
     val isEnglish by viewModel.isEnglish.collectAsState()
     val isDarkMode by viewModel.isDarkMode.collectAsState()
-    val cardGradientStart = if (isDarkMode) Color(0xFF818CF8) else Color(0xFF1E3A8A)
+    val cardGradientStart = Color(0xFF818CF8)
     
     val salesCardTitle = when (dashboardFilterVal) {
         is ReportFilter.AllTime -> if (isEnglish) "All-time Total Sales" else "সব সময়ের মোট বিক্রি"
@@ -149,7 +149,7 @@ fun DashboardScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Person,
+                                imageVector = Icons.Outlined.Storefront,
                                 contentDescription = "User Profile",
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(32.dp)
@@ -540,7 +540,12 @@ fun DashboardScreen(
         // Stats Grid
         item {
             val isDarkMode by viewModel.isDarkMode.collectAsState()
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            var isAdVisible by remember { mutableStateOf(false) }
+            Column {
+                AdBanner(onVisibilityChanged = { isAdVisible = it })
+                if (isAdVisible) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
                 MetricCard(
                     title = t(viewModel, "মোট বকেয়া (Due Amount)", "Total Dues"),
                     value = formattedDue,
@@ -555,6 +560,8 @@ fun DashboardScreen(
                     }
                 )
 
+                Spacer(modifier = Modifier.height(12.dp))
+
                 MetricCard(
                     title = t(viewModel, "মোট আদায়", "Total Collected"),
                     value = formattedCollected,
@@ -568,6 +575,8 @@ fun DashboardScreen(
                         onNavigateToHistory()
                     }
                 )
+                
+                Spacer(modifier = Modifier.height(12.dp))
                 
                 MetricCard(
                     title = t(viewModel, "স্টক সতর্কবার্তা", "Stock Warning"),

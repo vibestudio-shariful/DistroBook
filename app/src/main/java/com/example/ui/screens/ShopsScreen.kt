@@ -50,6 +50,7 @@ fun ShopsScreen(
     val shops by viewModel.shops.collectAsState()
     val orders by viewModel.orders.collectAsState()
     val isEnglish by viewModel.isEnglish.collectAsState()
+    val isDarkMode by viewModel.isDarkMode.collectAsState()
     
     var searchQuery by remember { mutableStateOf("") }
     var showAddEditDialog by remember { mutableStateOf(false) }
@@ -165,6 +166,7 @@ fun ShopsScreen(
                             shop = shop,
                             dueAmount = shopTotalDue,
                             isEnglish = isEnglish,
+                            isDarkMode = isDarkMode,
                             onClick = { selectedShopDetails = shop },
                             onEditClick = {
                                 selectedShopForEdit = shop
@@ -358,7 +360,8 @@ fun ShopsScreen(
                                 Text(text = "৳${String.format("%,.0f", shopTotalSales)}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
                         }
-                        val isDark = isSystemInDarkTheme()
+                        val isDarkMode by viewModel.isDarkMode.collectAsState()
+                        val isDark = isDarkMode
                         val cardBg = if (shopTotalDue > 0) {
                             MaterialTheme.colorScheme.errorContainer
                         } else {
@@ -412,7 +415,8 @@ fun ShopsScreen(
                                             if (order.dueAmount > 0) {
                                                 Text(text = if (isEnglish) "Due: ৳${String.format("%,.0f", order.dueAmount)}" else "বকেয়া: ৳${String.format("%,.0f", order.dueAmount)}", fontSize = 10.sp, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                                             } else {
-                                                Text(text = if (isEnglish) "Paid" else "পরিশোধিত", fontSize = 10.sp, color = if (isSystemInDarkTheme()) Color(0xFFC8E6C9) else Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
+                                                val isDarkMode by viewModel.isDarkMode.collectAsState()
+                                                Text(text = if (isEnglish) "Paid" else "পরিশোধিত", fontSize = 10.sp, color = if (isDarkMode) Color(0xFFC8E6C9) else Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
                                             }
                                         }
                                     }
@@ -474,6 +478,7 @@ fun ShopItemRow(
     shop: Shop,
     dueAmount: Double,
     isEnglish: Boolean,
+    isDarkMode: Boolean,
     onClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
@@ -643,7 +648,7 @@ fun ShopItemRow(
                 }
 
                 // Outstanding Due Badge
-                val isDark = isSystemInDarkTheme()
+                val isDark = isDarkMode
                 val dueBg = if (dueAmount > 0) {
                     if (isDark) Color(0xFF422020) else Color(0xFFFFEBEE)
                 } else {

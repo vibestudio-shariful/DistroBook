@@ -655,8 +655,8 @@ fun ProfileScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Store,
-                                            contentDescription = "Shop Profile",
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = "User Profile",
                                             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                                             modifier = Modifier.size(50.dp)
                                         )
@@ -1155,8 +1155,8 @@ fun ProfileScreen(
                                 Text(
                                     text = t(
                                         viewModel,
-                                        "আপনার প্রোফাইল ছবি, শপের ছবি এবং সমস্ত বেচাকেনা ও ক্রেতার তথ্য সম্পূর্ণ নিরাপদ রাখতে সরাসরি গুগল ড্রাইভে ব্যাকআপ রাখুন।",
-                                        "Securely backup your profile photos, shop photos, sales records, and customer details directly to Google Drive."
+                                        "আপনার সমস্ত বেচাকেনা ও ক্রেতার তথ্য সম্পূর্ণ নিরাপদ রাখতে সরাসরি গুগল ড্রাইভে ব্যাকআপ রাখুন।",
+                                        "Securely backup your sales records and customer details directly to Google Drive."
                                     ),
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1207,8 +1207,8 @@ fun ProfileScreen(
                                 Text(
                                     text = t(
                                         viewModel,
-                                        "আপনার প্রোফাইল ছবি, শপের ছবি এবং বেচাকেনার সমস্ত ডাটা সুরক্ষিত রাখতে গুগল ড্রাইভ ব্যাকআপ সিস্টেম চালু করুন। হোয়াটসঅ্যাপের মতো যখন খুশি তখন যেকোনো ফোনে সম্পূর্ণ ডাটা রিস্টোর করতে পারবেন।",
-                                        "Enable Google Drive cloud backups to keep profile photos, shop photos, and sales data absolutely secure. Restore your entire data anytime on any phone, just like WhatsApp."
+                                        "আপনার বেচাকেনার সমস্ত ডাটা সুরক্ষিত রাখতে গুগল ড্রাইভ ব্যাকআপ সিস্টেম চালু করুন। হোয়াটসঅ্যাপের মতো যখন খুশি তখন যেকোনো ফোনে সম্পূর্ণ ডাটা রিস্টোর করতে পারবেন।",
+                                        "Enable Google Drive cloud backups to keep your sales data absolutely secure. Restore your entire data anytime on any phone, just like WhatsApp."
                                     ),
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,

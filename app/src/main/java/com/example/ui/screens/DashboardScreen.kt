@@ -147,8 +147,8 @@ fun DashboardScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Storefront,
-                                contentDescription = "Shop Profile",
+                                imageVector = Icons.Outlined.Person,
+                                contentDescription = "User Profile",
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(32.dp)
                             )
@@ -545,6 +545,7 @@ fun DashboardScreen(
                     containerColor = if (isDarkMode) Color(0xFF422020) else Color(0xFFFFEBEE),
                     contentColor = if (isDarkMode) Color(0xFFFFEBEE) else Color(0xFFB71C1C),
                     iconColor = if (isDarkMode) Color(0xFFEF5350) else Color(0xFFD32F2F),
+                    isDarkMode = isDarkMode,
                     onClick = {
                         viewModel.historySelectedTab.value = 1
                         onNavigateToHistory()
@@ -558,6 +559,7 @@ fun DashboardScreen(
                     containerColor = if (isDarkMode) Color(0xFF203220) else Color(0xFFE8F5E9),
                     contentColor = if (isDarkMode) Color(0xFFE8F5E9) else Color(0xFF1B5E20),
                     iconColor = if (isDarkMode) Color(0xFF66BB6A) else Color(0xFF388E3C),
+                    isDarkMode = isDarkMode,
                     onClick = {
                         viewModel.historySelectedTab.value = 2
                         onNavigateToHistory()
@@ -571,6 +573,7 @@ fun DashboardScreen(
                     containerColor = if (isDarkMode) Color(0xFF32281A) else Color(0xFFFFF3E0),
                     contentColor = if (isDarkMode) Color(0xFFFFF3E0) else Color(0xFFE65100),
                     iconColor = if (isDarkMode) Color(0xFFFFA726) else Color(0xFFF57C00),
+                    isDarkMode = isDarkMode,
                     onClick = {
                         viewModel.setShowOnlyLowStockInProducts(true)
                         onManageProductsClick()
@@ -725,38 +728,34 @@ fun MetricCard(
     containerColor: Color,
     contentColor: Color,
     iconColor: Color = contentColor,
+    isDarkMode: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
-    val isDark = isSystemInDarkTheme()
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent,
             contentColor = contentColor
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDarkMode) 0.dp else 2.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
                     brush = Brush.horizontalGradient(
-                        colors = if (isDark) {
-                            listOf(containerColor, containerColor.copy(alpha = 0.8f))
-                        } else {
-                            listOf(Color.White, Color.White)
-                        }
+                        colors = listOf(containerColor, containerColor.copy(alpha = 0.8f))
                     )
                 )
                 .then(
-                    if (!isDark) Modifier.border(1.5.dp, containerColor.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
-                    else Modifier.border(1.dp, contentColor.copy(alpha = 0.1f), RoundedCornerShape(24.dp))
+                    if (!isDarkMode) Modifier.border(1.dp, containerColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                    else Modifier.border(1.dp, contentColor.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
                 )
-                .padding(20.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -765,15 +764,15 @@ fun MetricCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
-                        fontSize = 13.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = contentColor.copy(alpha = 0.8f),
                         letterSpacing = 0.5.sp
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = value,
-                        fontSize = 28.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
                         color = contentColor
                     )
@@ -781,15 +780,15 @@ fun MetricCard(
                 
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(iconColor.copy(alpha = if (isDark) 0.15f else 0.2f)),
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(iconColor.copy(alpha = if (isDarkMode) 0.15f else 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(30.dp),
+                        modifier = Modifier.size(20.dp),
                         tint = iconColor
                     )
                 }

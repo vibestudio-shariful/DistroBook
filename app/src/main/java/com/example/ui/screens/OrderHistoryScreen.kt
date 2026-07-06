@@ -533,15 +533,15 @@ fun OrderHistoryScreen(
                             Text(text = "৳${String.format("%,.2f", order.totalAmount)}", fontSize = 13.sp, fontWeight = FontWeight.Black)
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(text = if (isEnglish) "Collected:" else "টাকা আদায়:", fontSize = 13.sp, color = if (isSystemInDarkTheme()) Color(0xFFC8E6C9) else Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
-                            Text(text = "৳${String.format("%,.2f", order.paidAmount)}", fontSize = 13.sp, color = if (isSystemInDarkTheme()) Color(0xFFC8E6C9) else Color(0xFF2E7D32), fontWeight = FontWeight.Black)
+                            Text(text = if (isEnglish) "Collected:" else "টাকা আদায়:", fontSize = 13.sp, color = if (viewModel.isDarkMode.collectAsState().value) Color(0xFFC8E6C9) else Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
+                            Text(text = "৳${String.format("%,.2f", order.paidAmount)}", fontSize = 13.sp, color = if (viewModel.isDarkMode.collectAsState().value) Color(0xFFC8E6C9) else Color(0xFF2E7D32), fontWeight = FontWeight.Black)
                         }
                         
                         Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             val isDue = order.dueAmount > 0
-                            val col = if (isDue) MaterialTheme.colorScheme.error else (if (isSystemInDarkTheme()) Color(0xFFC8E6C9) else Color(0xFF2E7D32))
+                            val col = if (isDue) MaterialTheme.colorScheme.error else (if (viewModel.isDarkMode.collectAsState().value) Color(0xFFC8E6C9) else Color(0xFF2E7D32))
                             Text(text = if (isEnglish) "Outstanding Due:" else "বকেয়া:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = col)
                             Text(text = "৳${String.format("%,.2f", order.dueAmount)}", fontSize = 15.sp, fontWeight = FontWeight.Black, color = col)
                         }
@@ -581,7 +581,7 @@ fun OrderHistoryScreen(
                                     showPaymentUpdateDialog = order
                                 },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.tertiary else Color(0xFF2E7D32))
+                                colors = ButtonDefaults.buttonColors(containerColor = if (viewModel.isDarkMode.collectAsState().value) MaterialTheme.colorScheme.tertiary else Color(0xFF2E7D32))
                             ) {
                                 Icon(Icons.Outlined.Payment, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))

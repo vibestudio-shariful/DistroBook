@@ -618,7 +618,7 @@ fun CreateOrderScreen(
                             text = "৳${String.format("%,.2f", dueAmount)}",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (dueAmount > 0) MaterialTheme.colorScheme.error else (if (isSystemInDarkTheme()) Color(0xFFC8E6C9) else Color(0xFF2E7D32))
+                            color = if (dueAmount > 0) MaterialTheme.colorScheme.error else (if (viewModel.isDarkMode.collectAsState().value) Color(0xFFC8E6C9) else Color(0xFF2E7D32))
                         )
                     }
                 }
@@ -792,7 +792,7 @@ fun CreateOrderScreen(
                         Text(
                             text = "৳${String.format("%,.2f", dueAmount)}",
                             fontWeight = FontWeight.Bold,
-                            color = if (dueAmount > 0) MaterialTheme.colorScheme.error else (if (isSystemInDarkTheme()) Color(0xFFC8E6C9) else Color(0xFF2E7D32))
+                            color = if (dueAmount > 0) MaterialTheme.colorScheme.error else (if (viewModel.isDarkMode.collectAsState().value) Color(0xFFC8E6C9) else Color(0xFF2E7D32))
                         )
                     }
                 }

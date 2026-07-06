@@ -99,19 +99,31 @@ fun DashboardScreen(
                     .padding(vertical = 4.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 border = null
             ) {
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onProfileClick() }
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.secondary
+                                )
+                            )
+                        )
                 ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onProfileClick() }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
                     // Profile Image
                     val userAvatarPath by viewModel.userAvatarPath.collectAsState()
                     val avatarModel = userAvatarPath ?: R.drawable.img_user_avatar
@@ -182,9 +194,10 @@ fun DashboardScreen(
                 }
             }
         }
+    }
 
-        // Report Filter Section
-        item {
+    // Report Filter Section
+    item {
             val context = LocalContext.current
             var showMonthPicker by remember { mutableStateOf(false) }
 
@@ -670,41 +683,63 @@ fun MetricCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = containerColor,
+            containerColor = Color.Transparent,
             contentColor = contentColor
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(
+                            containerColor,
+                            containerColor.copy(alpha = 0.8f)
+                        )
+                    )
+                )
+                .padding(16.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = contentColor.copy(alpha = 0.8f)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = value,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor.copy(alpha = 0.6f),
+                        letterSpacing = 0.5.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = value,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black,
+                        color = contentColor
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(contentColor.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = contentColor
+                    )
+                }
             }
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(28.dp),
-                tint = contentColor.copy(alpha = 0.8f)
-            )
         }
     }
 }

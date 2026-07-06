@@ -1055,72 +1055,74 @@ fun ProfileScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     items(driveBackups) { backup ->
-                                        val displayName = try {
-                                            val parts = backup.name.replace("distrobook_backup_", "").replace(".json", "")
-                                            val parser = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-                                            val formatter = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
-                                            val date = parser.parse(parts)
-                                            if (date != null) formatter.format(date) else backup.name
-                                        } catch (e: Exception) {
-                                            backup.name
-                                        }
+                                        if (backup != null && backup.name != null) {
+                                            val displayName = try {
+                                                val parts = backup.name.replace("distrobook_backup_", "").replace(".json", "")
+                                                val parser = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                                                val formatter = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+                                                val date = parser.parse(parts)
+                                                if (date != null) formatter.format(date) else backup.name
+                                            } catch (e: Exception) {
+                                                backup.name
+                                            }
 
-                                        val sizeInKb = String.format("%.1f", backup.size / 1024.0)
+                                            val sizeInKb = String.format("%.1f", backup.size / 1024.0)
 
-                                        Card(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    pendingCloudRestoreBackup = backup
-                                                },
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                            ),
-                                            shape = RoundedCornerShape(10.dp)
-                                        ) {
-                                            Row(
+                                            Card(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .padding(12.dp),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
+                                                    .clickable {
+                                                        pendingCloudRestoreBackup = backup
+                                                    },
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                                ),
+                                                shape = RoundedCornerShape(10.dp)
                                             ) {
                                                 Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                    modifier = Modifier.weight(1f)
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(12.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.CloudDownload,
-                                                        contentDescription = null,
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.size(24.dp)
-                                                    )
-                                                    Column {
-                                                        Text(
-                                                            text = displayName,
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = MaterialTheme.colorScheme.onSurface
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.CloudDownload,
+                                                            contentDescription = null,
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.size(24.dp)
                                                         )
-                                                        Text(
-                                                            text = "$sizeInKb KB",
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
+                                                        Column {
+                                                            Text(
+                                                                text = displayName,
+                                                                style = MaterialTheme.typography.bodyMedium,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = MaterialTheme.colorScheme.onSurface
+                                                            )
+                                                            Text(
+                                                                text = "$sizeInKb KB",
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        }
                                                     }
-                                                }
 
-                                                IconButton(
-                                                    onClick = {
-                                                        pendingCloudDeleteBackup = backup
+                                                    IconButton(
+                                                        onClick = {
+                                                            pendingCloudDeleteBackup = backup
+                                                        }
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Delete,
+                                                            contentDescription = "Delete Backup",
+                                                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                                        )
                                                     }
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Delete,
-                                                        contentDescription = "Delete Backup",
-                                                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                                                    )
                                                 }
                                             }
                                         }

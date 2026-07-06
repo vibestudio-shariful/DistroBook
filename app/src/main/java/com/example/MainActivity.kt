@@ -165,8 +165,8 @@ fun MainAppScreen() {
     },
     bottomBar = {
       NavigationBar(
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        tonalElevation = 8.dp,
+        containerColor = MaterialTheme.colorScheme.primary,
+        tonalElevation = 0.dp,
         modifier = Modifier.testTag("bottom_nav")
       ) {
         val isEnglish by viewModel.isEnglish.collectAsState()
@@ -198,13 +198,13 @@ fun MainAppScreen() {
                 contentDescription = item.label
               )
             },
-            label = { Text(item.label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+            label = { Text(item.label, fontSize = 10.sp, fontWeight = FontWeight.Bold) },
             colors = NavigationBarItemDefaults.colors(
-              selectedIconColor = MaterialTheme.colorScheme.primary,
-              selectedTextColor = MaterialTheme.colorScheme.primary,
-              indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-              unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-              unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+              selectedIconColor = Color.White,
+              selectedTextColor = Color.White,
+              indicatorColor = Color.White.copy(alpha = 0.2f),
+              unselectedIconColor = Color.White.copy(alpha = 0.6f),
+              unselectedTextColor = Color.White.copy(alpha = 0.6f)
             ),
             modifier = Modifier.testTag("nav_item_${item.route}")
           )

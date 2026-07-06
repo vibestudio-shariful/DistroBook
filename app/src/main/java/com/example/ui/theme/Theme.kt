@@ -17,13 +17,13 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = TechPrimary,
+    primary = PrimaryModern,
     onPrimary = Color.White,
     primaryContainer = DarkPrimaryContainer,
     onPrimaryContainer = DarkOnPrimaryContainer,
-    secondary = TechSecondary,
+    secondary = SecondaryModern,
     onSecondary = Color.White,
-    tertiary = TechAccent,
+    tertiary = TertiaryModern,
     background = DarkBackground,
     onBackground = DarkOnSurface,
     surface = DarkSurface,
@@ -34,13 +34,13 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = TechPrimary,
+    primary = PrimaryModern,
     onPrimary = Color.White,
     primaryContainer = LightPrimaryContainer,
     onPrimaryContainer = LightOnPrimaryContainer,
-    secondary = TechSecondary,
+    secondary = SecondaryModern,
     onSecondary = Color.White,
-    tertiary = TechAccent,
+    tertiary = TertiaryModern,
     background = LightBackground,
     onBackground = LightOnSurface,
     surface = LightSurface,
@@ -83,11 +83,11 @@ fun MyApplicationTheme(
                         android.graphics.Color.TRANSPARENT
                     ),
                     navigationBarStyle = if (darkTheme) {
-                        androidx.activity.SystemBarStyle.dark(colorScheme.surface.toArgb())
+                        androidx.activity.SystemBarStyle.dark(colorScheme.primary.toArgb())
                     } else {
                         androidx.activity.SystemBarStyle.light(
-                            colorScheme.surface.toArgb(),
-                            colorScheme.surface.toArgb()
+                            colorScheme.primary.toArgb(),
+                            colorScheme.primary.toArgb()
                         )
                     }
                 )
